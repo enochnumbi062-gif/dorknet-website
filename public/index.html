@@ -4,8 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DorkNet | Cybersécurité, Pentesting & Écosystème AGATA</title>
+    
+    <!-- Feuilles de style externes -->
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Styles CSS internes -->
     <style>
         /* --- Cyber Loader --- */
         #cyber-loader {
@@ -710,7 +714,9 @@
 </head>
 <body>
 
-    <!-- Cyber Loader Screen -->
+    <!-- ========================================== -->
+    <!-- 1. CYBER LOADER SCREEN                    -->
+    <!-- ========================================== -->
     <div id="cyber-loader">
         <canvas id="matrix-canvas"></canvas>
         <div class="loader-content">
@@ -725,10 +731,12 @@
         </div>
     </div>
 
-    <!-- Element caché requis par Google Translate -->
+    <!-- Élément caché requis par Google Translate -->
     <div id="google_translate_element" style="display:none;"></div>
 
-    <!-- Navigation Flottante -->
+    <!-- ========================================== -->
+    <!-- 2. NAVIGATION FLOTTANTE                    -->
+    <!-- ========================================== -->
     <header class="navbar-container">
         <nav class="navbar">
             <div class="logo">
@@ -743,10 +751,11 @@
                 <li><a href="#audit" class="btn-nav">Réserver ton Audit</a></li>
                 <li><a href="#contact">Contact</a></li>
                 
-                <!-- Boutons d'Authentification / Création de compte -->
+                <!-- Authentification -->
                 <li><a href="javascript:void(0)" onclick="openAuthModal('login')" class="btn-login"><i class="fa-solid fa-right-to-bracket"></i> Connexion</a></li>
                 <li><a href="javascript:void(0)" onclick="openAuthModal('register')" class="btn-register"><i class="fa-solid fa-user-plus"></i> Créer un compte</a></li>
                 
+                <!-- Sélecteur de langue -->
                 <li>
                     <select class="lang-select" id="lang-select">
                         <option value="en">English</option>
@@ -770,7 +779,9 @@
         </nav>
     </header>
 
-    <!-- Section Accueil -->
+    <!-- ========================================== -->
+    <!-- 3. SECTION ACCUEIL                         -->
+    <!-- ========================================== -->
     <section id="accueil" class="hero">
         <div class="hero-content">
             <span class="badge">Expertise & Cybersécurité Avancée</span>
@@ -785,7 +796,9 @@
         </div>
     </section>
 
-    <!-- Section Services -->
+    <!-- ========================================== -->
+    <!-- 4. SECTION SERVICES                        -->
+    <!-- ========================================== -->
     <section id="services" class="section">
         <div class="section-title">
             <h2>Nos Domaines d'Expertise</h2>
@@ -834,7 +847,9 @@
         </div>
     </section>
 
-    <!-- Section Nos Projets & Écosystème AGATA -->
+    <!-- ========================================== -->
+    <!-- 5. SECTION PROJETS & ECOSYSTÈME AGATA     -->
+    <!-- ========================================== -->
     <section id="projets" class="section bg-alt">
         <div class="section-title">
             <h2>Écosystème & Projets Stratégiques</h2>
@@ -904,7 +919,9 @@
         </div>
     </section>
 
-    <!-- Section Formations -->
+    <!-- ========================================== -->
+    <!-- 6. SECTION FORMATIONS                      -->
+    <!-- ========================================== -->
     <section id="formations" class="section">
         <div class="section-title">
             <h2>Formations en Ethical Hacking</h2>
@@ -955,7 +972,9 @@
         </div>
     </section>
 
-    <!-- Section Communauté & Statistiques -->
+    <!-- ========================================== -->
+    <!-- 7. SECTION COMMUNAUTÉ & STATISTIQUES       -->
+    <!-- ========================================== -->
     <div class="community-section">
         <div class="section-title" style="margin-bottom: 20px;">
             <h2>Communauté</h2>
@@ -972,7 +991,9 @@
         </div>
     </div>
 
-    <!-- Section Réserver un Audit -->
+    <!-- ========================================== -->
+    <!-- 8. SECTION RÉSERVER UN AUDIT               -->
+    <!-- ========================================== -->
     <section id="audit" class="section bg-alt">
         <div class="audit-container">
             <div class="audit-text">
@@ -1009,7 +1030,9 @@
         </div>
     </section>
 
-    <!-- Section Contact -->
+    <!-- ========================================== -->
+    <!-- 9. SECTION CONTACT                         -->
+    <!-- ========================================== -->
     <section id="contact" class="section">
         <div class="section-title">
             <h2>Entrer en Contact Avec l'Équipe DorkNet</h2>
@@ -1036,7 +1059,9 @@
         </div>
     </section>
 
-    <!-- Section Cube 3D Flottant -->
+    <!-- ========================================== -->
+    <!-- 10. SECTION CUBE 3D FLOTTANT               -->
+    <!-- ========================================== -->
     <div class="cube-section">
         <div class="scene">
             <div class="cube">
@@ -1050,7 +1075,9 @@
         </div>
     </div>
 
-    <!-- Footer avec Liens Modales Interactifs -->
+    <!-- ========================================== -->
+    <!-- 11. FOOTER                                 -->
+    <!-- ========================================== -->
     <footer>
         <div class="footer-content" style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
             <div class="footer-grid">
@@ -1091,7 +1118,11 @@
         </div>
     </footer>
 
-    <!-- Widget Chatbot Flottant Amélioré -->
+    <!-- ========================================== -->
+    <!-- 12. COMPOSANTS FLOTTANTS ET MODALES        -->
+    <!-- ========================================== -->
+
+    <!-- Widget Chatbot Flottant -->
     <div class="chat-widget-btn" onclick="toggleChatPanel()">
         <i class="fa-solid fa-comments"></i>
     </div>
@@ -1102,7 +1133,7 @@
             <i class="fa-solid fa-xmark" style="cursor: pointer;" onclick="toggleChatPanel()"></i>
         </div>
 
-        <!-- Vue 1: Messages (Défaut + Interface Écriture) -->
+        <!-- Vue 1: Messages -->
         <div class="chat-view active" id="viewMessages">
             <div class="chat-body-default" id="chatDefaultState" style="display: flex; flex-direction: column; height: 100%;">
                 <i class="fa-regular fa-comment-dots main-icon"></i>
@@ -1126,7 +1157,7 @@
             </div>
         </div>
 
-        <!-- Vue 2: Home (Panel Membres & Notifications d'Absence) -->
+        <!-- Vue 2: Home -->
         <div class="chat-view" id="viewHome">
             <div class="home-section-title">Membres de l'Équipe DorkNet</div>
             <div class="team-panel-list">
@@ -1175,7 +1206,7 @@
             </div>
         </div>
 
-        <!-- Vue 3: Help (Documentation Complète Agata-AI) -->
+        <!-- Vue 3: Help -->
         <div class="chat-view" id="viewHelp">
             <div class="help-content">
                 <h4>Manuel d'Utilisation : Agata-AI</h4>
@@ -1265,7 +1296,7 @@
         </div>
     </div>
 
-    <!-- Interface Agata-AI Modal -->
+    <!-- Modal Agata-AI Interface -->
     <div class="agata-modal" id="agataModal">
         <div class="agata-box">
             <div class="agata-header">
@@ -1283,7 +1314,11 @@
         </div>
     </div>
 
-    <!-- Integration Google Translate API (Chargement Asynchrone Sécurisé) -->
+    <!-- ========================================== -->
+    <!-- 13. SCRIPTS ET LOGIQUE JAVASCRIPT          -->
+    <!-- ========================================== -->
+
+    <!-- Integration Google Translate API -->
     <script type="text/javascript">
     function googleTranslateElementInit() {
         new google.translate.TranslateElement({pageLanguage: 'fr'}, 'google_translate_element');
@@ -1291,7 +1326,10 @@
     </script>
     <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async defer></script>
 
+    <!-- Fichier script externe -->
     <script src="script.js"></script>
+
+    <!-- Scripts internes du site -->
     <script>
         // Matrix Rain & Loader Controller
         const canvas = document.getElementById('matrix-canvas');
@@ -1623,7 +1661,7 @@
                     <h3>Présentation Générale</h3>
                     <p>DorkNet est une plateforme spécialisée en cybersécurité avancée, ingénierie d'audit, hacking éthique et défense des infrastructures numériques. Elle combine formation pratique, outils d'investigation et un écosystème logiciel haute performance (suite AGATA).</p>
                     <h3>Notre Vision & L'Idée</h3>
-                    <p>Face à la recrudescence et à la complexité des cyberattaques, DorkNet est né d'une idée centrale : démocratiser la cybersécurité défensive et offensive tout en fournissant des solutions d'audit concrètes, automatisées et souveraines.</p>
+                    <p>Face à la recrundescence et à la complexité des cyberattaques, DorkNet est né d'une idée centrale : démocratiser la cybersécurité défensive et offensive tout en fournissant des solutions d'audit concrètes, automatisées et souveraines.</p>
                     <h3>Le Besoin auquel répond DorkNet</h3>
                     <ul>
                         <li><strong>Pénurie d'expertise :</strong> Combler le manque de compétences techniques via des cursus axés sur la pratique directe.</li>
@@ -1668,7 +1706,7 @@
                 title: "Conditions d'utilisation",
                 html: `
                     <p>En naviguant sur notre plateforme et en utilisant nos services, vous acceptez l'intégralité de nos conditions d'utilisation.</p>
-                    <p>Toutes les ressources pédagogiques, codes source et documentations fournis sur DorkNet sont protégés par le droit d'auteur. Toute reproduction non autorisée est strictement interdite.</p>
+                    <p>Toutes les ressources pédagogiques, codes source et documentations fournis sur DorkNet sont protégés par le droit d'auteur. Toute reproduction non autorisée est strictly interdite.</p>
                 `
             },
             ai_terms: {
@@ -1691,7 +1729,7 @@
             cookies: {
                 title: "Politique relative aux cookies",
                 html: `
-                    <p>Nous utilisons des cookies strictement techniques pour garantir le bon fonctionnement de notre site, la gestion de votre session et la persistance de vos préférences de langue.</p>
+                    <p>Nous utilisons des cookies strictly techniques pour garantir le bon fonctionnement de notre site, la gestion de votre session et la persistance de vos préférences de langue.</p>
                     <p>Aucun cookie d'analyse comportementale tierce ou d'affichage publicitaire n'est déposé sur votre équipement.</p>
                 `
             }
