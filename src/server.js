@@ -9,10 +9,14 @@ const crypto = require('crypto');
 const { Resend } = require('resend');
 const { GoogleGenAI } = require('@google/genai');
 
-// Laisser simplement la lecture depuis l'environnement :
+// Environment variables
 const DATABASE_URL = process.env.DATABASE_URL;
+const PORT = process.env.PORT || 5000;
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
-// Importer les modules externes
+// Modules externes
 const { readDB, writeDB } = require('./database');
 const { authenticateToken, JWT_SECRET } = require('./authMiddleware');
 const { createSignedAuditPDF } = require('./generatePDF');
@@ -21,11 +25,6 @@ const app = express();
 
 // Confiance au proxy de Render (indispensable pour express-rate-limit)
 app.set('trust proxy', 1);
-
-const PORT = process.env.PORT || 5000;
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
 // ==========================================
 // INITIALISATION DES SERVICES EXTERNES
@@ -63,7 +62,7 @@ const authLimiter = rateLimit({
   message: { error: "Trop de tentatives d'authentification. Réessayez plus tard." }
 });
 
-// Helper : Assainissement strict contre les failles XSS
+// Helpers
 function sanitizeInput(str) {
   if (typeof str !== 'string') return '';
   return str.replace(/[&<>"']/g, (m) => ({
@@ -241,7 +240,7 @@ app.post('/api/agata/chat', authenticateToken, async (req, res) => {
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-1.5-flash',
       contents: message,
       config: {
         systemInstruction: "Tu es AGATA-AI, l'assistant virtuel de cybersécurité du système DorkNet. Tes réponses doivent être concises, techniques et professionnelles."
