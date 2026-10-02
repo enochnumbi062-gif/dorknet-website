@@ -3207,3 +3207,24 @@ server =
 // ============================================================
 
 module.exports = app;
+const token = jwt.sign(
+  {
+    sub: user.id,
+    id: user.id,
+    email: user.email,
+    nom: user.nom,
+    role: user.role || 'user',
+    jti: crypto.randomUUID()
+  },
+  JWT_SECRET,
+  {
+    algorithm: process.env.JWT_ALGORITHM || 'HS256',
+    expiresIn: process.env.JWT_EXPIRES_IN || '12h',
+    ...(process.env.JWT_ISSUER
+      ? { issuer: process.env.JWT_ISSUER }
+      : {}),
+    ...(process.env.JWT_AUDIENCE
+      ? { audience: process.env.JWT_AUDIENCE }
+      : {})
+  }
+);
