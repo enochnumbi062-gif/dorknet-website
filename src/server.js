@@ -240,7 +240,7 @@ app.post('/api/agata/chat', authenticateToken, async (req, res) => {
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       contents: message,
       config: {
         systemInstruction: "Tu es AGATA-AI, l'assistant virtuel de cybersécurité du système DorkNet. Tes réponses doivent être concises, techniques et professionnelles."
