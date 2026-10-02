@@ -99,7 +99,7 @@
                 <i class="fa-solid fa-crown"></i> Passer en Premium
             </button>
             <button onclick="downloadCertif()" class="btn btn-outline btn-block">
-                <i class="fa-solid fa-file-certificate"></i> Certificat CTF
+                <i class="fa-solid fa-certificate"></i> Certificat CTF
             </button>
             <button onclick="logout()" class="btn btn-outline btn-block" style="border-color: #ef4444; color: #ef4444;">
                 <i class="fa-solid fa-right-from-bracket"></i> Déconnexion
@@ -209,7 +209,10 @@
             try {
                 const res = await fetch('/api/user/upgrade-premium', {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
                 });
                 const data = await res.json();
                 alert(data.message || data.error);
@@ -239,6 +242,7 @@
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
+                window.URL.revokeObjectURL(url);
             } catch (err) {
                 alert("Erreur lors de la récupération du certificat.");
             }
