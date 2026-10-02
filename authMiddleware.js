@@ -5,7 +5,7 @@
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
 
-// Alignement strict du secret JWT avec le backend Python/Flask
+// Clé secrète partagée pour la signature et vérification des jetons
 const JWT_SECRET = process.env.JWT_SECRET || 'dorknet_default_jwt_secret_key_2026_fallback';
 
 if (!process.env.JWT_SECRET) {
@@ -18,7 +18,7 @@ if (!process.env.JWT_SECRET) {
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
 
-  // Vérification de la présence et du format "Bearer <token>"
+  // Vérification de la présence et de la structure "Bearer <token>"
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ 
       error: 'Accès refusé. Token manquant ou format invalide (attendu: Bearer <token>).' 
@@ -39,6 +39,7 @@ function authenticateToken(req, res, next) {
       return res.status(403).json({ error: 'Jeton d\'authentification invalide ou altéré.' });
     }
 
+    // Attacher les données de l'utilisateur décodé à la requête
     req.user = decodedUser;
     next();
   });
