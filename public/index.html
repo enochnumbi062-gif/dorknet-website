@@ -747,13 +747,13 @@
                 <li><a href="#services">Nos Services</a></li>
                 <li><a href="#projets">Nos Projets</a></li>
                 <li><a href="#formations">Nos Formations</a></li>
-                <li><a href="javascript:void(0)" onclick="openAgataModal()"><i class="fa-solid fa-brain"></i> Agata-AI</a></li>
+                <li><a href="javascript:void(0)" id="btnOpenAgataNav"><i class="fa-solid fa-brain"></i> Agata-AI</a></li>
                 <li><a href="#audit" class="btn-nav">Réserver ton Audit</a></li>
                 <li><a href="#contact">Contact</a></li>
                 
                 <!-- Authentification -->
-                <li><a href="javascript:void(0)" onclick="openAuthModal('login')" class="btn-login"><i class="fa-solid fa-right-to-bracket"></i> Connexion</a></li>
-                <li><a href="javascript:void(0)" onclick="openAuthModal('register')" class="btn-register"><i class="fa-solid fa-user-plus"></i> Créer un compte</a></li>
+                <li><a href="javascript:void(0)" id="btnOpenLoginNav" class="btn-login"><i class="fa-solid fa-right-to-bracket"></i> Connexion</a></li>
+                <li><a href="javascript:void(0)" id="btnOpenRegisterNav" class="btn-register"><i class="fa-solid fa-user-plus"></i> Créer un compte</a></li>
                 
                 <!-- Sélecteur de langue -->
                 <li>
@@ -1085,20 +1085,20 @@
                 <div class="footer-col">
                     <h4>Ressources</h4>
                     <ul>
-                        <li><a onclick="openInfoModal('about')">À propos de nous</a></li>
-                        <li><a onclick="openInfoModal('redaction')">Rédaction</a></li>
-                        <li><a onclick="openInfoModal('communaute')">Communautés</a></li>
+                        <li><a data-info-modal="about">À propos de nous</a></li>
+                        <li><a data-info-modal="redaction">Rédaction</a></li>
+                        <li><a data-info-modal="communaute">Communautés</a></li>
                     </ul>
                 </div>
                 <!-- Colonne Confidentialité & Mentions Légales -->
                 <div class="footer-col">
                     <h4>Confidentialité et mentions légales</h4>
                     <ul>
-                        <li><a onclick="openInfoModal('privacy')">Politique de confidentialité</a></li>
-                        <li><a onclick="openInfoModal('terms')">Conditions d'utilisation</a></li>
-                        <li><a onclick="openInfoModal('ai_terms')">Conditions d'utilisation de l'IA</a></li>
-                        <li><a onclick="openInfoModal('aup')">Politique d'utilisation acceptable</a></li>
-                        <li><a onclick="openInfoModal('cookies')">Politique relative aux cookies</a></li>
+                        <li><a data-info-modal="privacy">Politique de confidentialité</a></li>
+                        <li><a data-info-modal="terms">Conditions d'utilisation</a></li>
+                        <li><a data-info-modal="ai_terms">Conditions d'utilisation de l'IA</a></li>
+                        <li><a data-info-modal="aup">Politique d'utilisation acceptable</a></li>
+                        <li><a data-info-modal="cookies">Politique relative aux cookies</a></li>
                     </ul>
                 </div>
             </div>
@@ -1123,14 +1123,14 @@
     <!-- ========================================== -->
 
     <!-- Widget Chatbot Flottant -->
-    <div class="chat-widget-btn" onclick="toggleChatPanel()">
+    <div class="chat-widget-btn" id="chatWidgetBtn">
         <i class="fa-solid fa-comments"></i>
     </div>
 
     <div class="chat-panel" id="chatPanel">
         <div class="chat-header">
             <span id="chatHeaderTitle">Messages</span>
-            <i class="fa-solid fa-xmark" style="cursor: pointer;" onclick="toggleChatPanel()"></i>
+            <i class="fa-solid fa-xmark" style="cursor: pointer;" id="btnCloseChatPanel"></i>
         </div>
 
         <!-- Vue 1: Messages -->
@@ -1139,7 +1139,7 @@
                 <i class="fa-regular fa-comment-dots main-icon"></i>
                 <h4>Aucun message</h4>
                 <p>Les messages de l'équipe s'afficheront ici</p>
-                <button class="btn-send-msg" onclick="enableMessageWriting()">
+                <button class="btn-send-msg" id="btnEnableChatWriting">
                     Envoyer un message <i class="fa-solid fa-paper-plane"></i>
                 </button>
             </div>
@@ -1151,8 +1151,8 @@
                     </div>
                 </div>
                 <div class="chat-input-box">
-                    <textarea id="userWidgetInput" placeholder="Écrivez votre message..." onkeypress="handleWidgetKey(event)"></textarea>
-                    <button onclick="sendWidgetMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+                    <textarea id="userWidgetInput" placeholder="Écrivez votre message..."></textarea>
+                    <button id="btnSendWidgetMsg"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
             </div>
         </div>
@@ -1239,9 +1239,9 @@
         </div>
 
         <div class="chat-footer-nav">
-            <div id="navHome" onclick="switchWidgetTab('home')"><i class="fa-solid fa-house"></i>Accueil</div>
-            <div id="navMessages" class="active" onclick="switchWidgetTab('messages')"><i class="fa-solid fa-comment"></i>Messages</div>
-            <div id="navHelp" onclick="switchWidgetTab('help')"><i class="fa-solid fa-circle-question"></i>Aide</div>
+            <div id="navHome" data-widget-tab="home"><i class="fa-solid fa-house"></i>Accueil</div>
+            <div id="navMessages" class="active" data-widget-tab="messages"><i class="fa-solid fa-comment"></i>Messages</div>
+            <div id="navHelp" data-widget-tab="help"><i class="fa-solid fa-circle-question"></i>Aide</div>
         </div>
     </div>
 
@@ -1250,7 +1250,7 @@
         <div class="info-modal-box">
             <div class="info-modal-header">
                 <span id="infoModalTitle">Titre de la section</span>
-                <i class="fa-solid fa-xmark" style="cursor: pointer; color: #fff;" onclick="closeInfoModal()"></i>
+                <i class="fa-solid fa-xmark" style="cursor: pointer; color: #fff;" id="btnCloseInfoModal"></i>
             </div>
             <div class="info-modal-body" id="infoModalBody">
                 <!-- Contenu dynamique -->
@@ -1263,7 +1263,7 @@
         <div class="info-modal-box" style="max-width: 450px;">
             <div class="info-modal-header">
                 <span id="authModalTitle">Créer un compte DorkNet</span>
-                <i class="fa-solid fa-xmark" style="cursor: pointer; color: #fff;" onclick="closeAuthModal()"></i>
+                <i class="fa-solid fa-xmark" style="cursor: pointer; color: #fff;" id="btnCloseAuthModal"></i>
             </div>
             <div class="info-modal-body">
                 <!-- Formulaire d'inscription -->
@@ -1278,7 +1278,7 @@
                         <input type="password" id="regPassword" placeholder="Mot de passe" required style="width:100%; padding:10px; background:#161b22; border:1px solid #30363d; color:#fff; border-radius:6px;">
                     </div>
                     <button type="submit" class="btn btn-primary" style="width: 100%;">Créer mon compte</button>
-                    <p style="font-size: 0.85rem; text-align: center; color: #8b949e;">Déjà un compte ? <a href="javascript:void(0)" onclick="switchAuthTab('login')" style="color:#00f2fe;">Se connecter</a></p>
+                    <p style="font-size: 0.85rem; text-align: center; color: #8b949e;">Déjà un compte ? <a href="javascript:void(0)" id="btnSwitchToLogin" style="color:#00f2fe;">Se connecter</a></p>
                 </form>
 
                 <!-- Formulaire de connexion -->
@@ -1290,7 +1290,7 @@
                         <input type="password" id="loginPassword" placeholder="Mot de passe" required style="width:100%; padding:10px; background:#161b22; border:1px solid #30363d; color:#fff; border-radius:6px;">
                     </div>
                     <button type="submit" class="btn btn-primary" style="width: 100%;">Se connecter</button>
-                    <p style="font-size: 0.85rem; text-align: center; color: #8b949e;">Pas encore de compte ? <a href="javascript:void(0)" onclick="switchAuthTab('register')" style="color:#00f2fe;">Créer un compte</a></p>
+                    <p style="font-size: 0.85rem; text-align: center; color: #8b949e;">Pas encore de compte ? <a href="javascript:void(0)" id="btnSwitchToRegister" style="color:#00f2fe;">Créer un compte</a></p>
                 </form>
             </div>
         </div>
@@ -1301,7 +1301,7 @@
         <div class="agata-box">
             <div class="agata-header">
                 <span><i class="fa-solid fa-brain"></i> Assistant Agata-AI </span>
-                <i class="fa-solid fa-xmark" style="cursor: pointer; color: #fff;" onclick="closeAgataModal()"></i>
+                <i class="fa-solid fa-xmark" style="cursor: pointer; color: #fff;" id="btnCloseAgataModal"></i>
             </div>
             <div class="agata-logs" id="agataLogs">
                 <p style="color: #00f2fe;">[AGATA initialized]</p>
