@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sections.forEach(section => observer.observe(section));
     }
 
-    // --- 3. FERMETURE UNIVERSELLE DES MODALES (CLIC EXTÉRIEUR ET TOUCHE ESC) ---
+    // --- 3. FERMETURE UNIVERSELLE DES MODALES ---
     const modals = document.querySelectorAll('.info-modal, .agata-modal, #authModal');
     
     window.addEventListener('click', (e) => {
@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- 4. ANIMATION CANVAS MATRIX RAIN & LOADER ---
+    // --- 4. ANIMATION CANVAS MATRIX RAIN ---
     const canvas = document.getElementById('matrix-canvas');
     if (canvas) {
         const ctx = canvas.getContext('2d');
@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
         drawMatrix();
     }
 
-    // --- 5. PROGRESSION DU CHARGEMENT EN POURCENTAGE ---
+    // --- 5. PROGRESSION DU CHARGEMENT ---
     const percentElement = document.getElementById('loader-percent');
     if (percentElement) {
         let progress = 0;
@@ -129,96 +129,122 @@ document.addEventListener('DOMContentLoaded', () => {
             progress += 1;
             percentElement.innerText = `${progress}%`;
             if (progress >= 100) clearInterval(interval);
-        }, 50);
+        }, 30);
     }
 
-    // --- 9. INTERCEPTION DES FORMULAIRES & AUTHENTIFICATION OTP ---
+    // --- 6. INSCRIPTION AVEC ENVOI D'OTP ---
     const registerForm = document.getElementById('registerForm');
-    const loginForm = document.getElementById('loginForm');
+    if (registerForm) {
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = registerForm.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn ? submitBtn.innerText : '';
 
-    // Traitement du formulaire d'inscription / Connexion (Demande d'OTP)
-    const handleAuthSubmit = async (e) => {
-        e.preventDefault();
-        const form = e.target;
-        const emailInput = form.querySelector('input[type="email"]');
-        const submitBtn = form.querySelector('button[type="submit"]');
+            const payload = {
+                nom: registerForm.querySelector('[name="nom"]')?.value || '',
+                email: registerForm.querySelector('[type="email"]')?.value || '',
+                telephone: registerForm.querySelector('[name="telephone"]')?.value || '',
+                password: registerForm.querySelector('[type="password"]')?.value || ''
+            };
 
-        if (!emailInput || !emailInput.value) {
-            alert("Veuillez saisir une adresse e-mail valide.");
-            return;
-        }
-
-        const email = emailInput.value.trim();
-        const originalBtnText = submitBtn ? submitBtn.innerText : '';
-
-        try {
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerText = "Envoi du code OTP...";
+            if (!payload.email || !payload.password) {
+                alert("Veuillez remplir les champs obligatoires (E-mail et Mot de passe).");
+                return;
             }
 
-            // Étape 1 : Demande du code OTP au backend Flask
-            const response = await fetch('/api/auth/request-otp', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
-            });
-
-            const result = await response.json();
-
-            if (response.ok && result.success) {
-                // Étape 2 : Saisie du code OTP par l'utilisateur
-                const userOtp = prompt(`Un code de validation a été envoyé à : ${email}\nVeuillez saisir votre code à 6 chiffres :`);
-
-                if (!userOtp) {
-                    alert("Validation annulée.");
-                    return;
+            try {
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerText = "Création du compte...";
                 }
 
-                // Étape 3 : Vérification du code OTP auprès du backend
-                const verifyResponse = await fetch('/api/auth/verify-otp', {
+                const response = await fetch('/api/auth/register-otp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, otp: userOtp.trim() })
+                    body: JSON.stringify(payload)
                 });
 
-                const verifyResult = await verifyResponse.json();
+                const result = await response.json();
 
-                if (verifyResponse.ok && verifyResult.success) {
-                    // Stockage du jeton JWT dans le navigateur
-                    localStorage.setItem('token', verifyResult.token);
-                    alert("Authentification réussie ! Bienvenue sur DorkNet.");
+                if (response.ok && result.success) {
+                    alert("Inscription réussie ! Un code d'activation a été envoyé à votre adresse e-mail.");
+                    switchAuthTab('login');
+                } else {
+                    alert(`Erreur : ${result.error || 'Échec de l\'inscription.'}`);
+                }
+            } catch (err) {
+                console.error("Erreur Inscription :", err);
+                alert("Erreur de connexion au serveur d'authentification.");
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = originalBtnText;
+                }
+            }
+        });
+    }
+
+    // --- 7. CONNEXION AVEC JWT ---
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = loginForm.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn ? submitBtn.innerText : '';
+
+            const payload = {
+                email: loginForm.querySelector('[type="email"]')?.value || '',
+                password: loginForm.querySelector('[type="password"]')?.value || ''
+            };
+
+            if (!payload.email || !payload.password) {
+                alert("Veuillez saisir votre e-mail et votre mot de passe.");
+                return;
+            }
+
+            try {
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerText = "Connexion...";
+                }
+
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success && result.token) {
+                    localStorage.setItem('token', result.token);
+                    alert(`Authentification réussie ! Bienvenue ${result.user?.nom || 'sur DorkNet'}.`);
                     closeAuthModal();
                     window.location.reload();
                 } else {
-                    alert(`Erreur : ${verifyResult.error || 'Code OTP incorrect.'}`);
+                    alert(`Erreur : ${result.error || 'Identifiants invalides.'}`);
                 }
-            } else {
-                alert(`Erreur : ${result.error || 'Échec de l\'envoi du code OTP.'}`);
+            } catch (err) {
+                console.error("Erreur Connexion :", err);
+                alert("Impossible de contacter le serveur d'authentification.");
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = originalBtnText;
+                }
             }
-        } catch (err) {
-            console.error("Erreur d'authentification :", err);
-            alert("Impossible de contacter le serveur d'authentification.");
-        } finally {
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.innerText = originalBtnText;
-            }
-        }
-    };
-
-    if (registerForm) registerForm.addEventListener('submit', handleAuthSubmit);
-    if (loginForm) loginForm.addEventListener('submit', handleAuthSubmit);
+        });
+    }
 });
 
-// --- 6. SÉCURITÉ & SANITIZATION XSS ---
+// --- 8. SÉCURITÉ & SANITIZATION XSS ---
 function sanitizeHTML(str) {
     const temp = document.createElement('div');
     temp.textContent = str;
     return temp.innerHTML;
 }
 
-// --- 7. CLIENT API ET GESTION DES JETONS DE SÉCURITÉ ---
+// --- 9. CLIENT API ET GESTION DES JETONS DE SÉCURITÉ ---
 function getAuthHeaders() {
     const token = localStorage.getItem('token');
     return {
@@ -227,7 +253,7 @@ function getAuthHeaders() {
     };
 }
 
-// --- 8. FONCTIONS GLOBALES POUR LA MODALE D'AUTHENTIFICATION ---
+// --- 10. FONCTIONS GLOBALES POUR LA MODALE D'AUTHENTIFICATION ---
 function openAuthModal(mode) {
     const modal = document.getElementById('authModal');
     if (modal) {
