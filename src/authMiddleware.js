@@ -2,15 +2,15 @@
  * DorkNet Security - Middleware d'Authentification JWT (Web AAL3 / Zero Trust Ready)
  */
 
+require('dotenv').config();
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
 
-// Sécurisation de la clé JWT en cas d'absence dans .env
+// Alignement strict du secret JWT avec le backend Python/Flask
+const JWT_SECRET = process.env.JWT_SECRET || 'dorknet_default_jwt_secret_key_2026_fallback';
+
 if (!process.env.JWT_SECRET) {
-  console.warn('[WARNING] JWT_SECRET n\'est pas défini dans le fichier .env ! Génération d\'une clé aléatoire temporaire.');
+  console.warn('[WARNING] JWT_SECRET n\'est pas défini dans le fichier .env ! Utilisation de la clé de secours par défaut.');
 }
-
-const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
 
 /**
  * Middleware de vérification du jeton JWT pour sécuriser les routes privées de l'API DorkNet.
