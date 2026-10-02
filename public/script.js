@@ -4,6 +4,9 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
+    // --- 0. VÉRIFICATION DE L'ÉTAT D'AUTHENTIFICATION AU CHARGEMENT ---
+    checkAuthState();
+
     // --- 1. GESTION DU MENU MOBILE SIDEBAR ---
     const mobileMenu = document.getElementById('mobileMenu');
     const navLinks = document.getElementById('navLinks');
@@ -262,7 +265,26 @@ function getAuthHeaders() {
     };
 }
 
-// --- 9. FONCTIONS GLOBALES POUR LA MODALE D'AUTHENTIFICATION ---
+// --- 9. ETAT D'AUTHENTIFICATION ET ADAPTATION UI ---
+function checkAuthState() {
+    const token = localStorage.getItem('token');
+    const authButtons = document.querySelectorAll('.auth-btn, [onclick*="openAuthModal"]');
+
+    if (token) {
+        authButtons.forEach(btn => {
+            btn.innerText = "Mon Compte";
+            btn.onclick = (e) => {
+                e.preventDefault();
+                if (confirm("Voulez-vous vous déconnecter ?")) {
+                    localStorage.removeItem('token');
+                    window.location.reload();
+                }
+            };
+        });
+    }
+}
+
+// --- 10. FONCTIONS GLOBALES POUR LA MODALE D'AUTHENTIFICATION ---
 function openAuthModal(mode) {
     const modal = document.getElementById('authModal');
     if (modal) {
