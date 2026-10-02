@@ -1,13 +1,16 @@
 /**
- * DorkNet Security - Script Frontend Unifié & Durci (Zero Trust)
+ * ============================================================
+ * DORKNET SECURITY — FRONTEND CLIENT SCRIPT (ZERO TRUST)
+ * AGATA Cyberdefense & Core UI Interactions
+ * ============================================================
  */
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- 0. VÉRIFICATION DE L'ÉTAT D'AUTHENTIFICATION AU CHARGEMENT ---
+    // --- 0. INITIALISATION DE L'ETAT D'AUTHENTIFICATION ---
     checkAuthState();
 
-    // --- 1. GESTION DU MENU MOBILE SIDEBAR ---
+    // --- 1. GESTION DU MENU NAVIGATION MOBILE ---
     const mobileMenu = document.getElementById('mobileMenu');
     const navLinks = document.getElementById('navLinks');
     const menuIcon = mobileMenu ? mobileMenu.querySelector('i') : null;
@@ -56,9 +59,9 @@ document.addEventListener('DOMContentLoaded', () => {
         sections.forEach(section => observer.observe(section));
     }
 
-    // --- 3. FERMETURE UNIVERSELLE DES MODALES ---
+    // --- 3. GESTION CENTRALISEE DES MODALES & TOUCHES CLAVIER ---
     const modals = document.querySelectorAll('.info-modal, .agata-modal, #authModal');
-    
+
     window.addEventListener('click', (e) => {
         modals.forEach(modal => {
             if (e.target === modal) {
@@ -77,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- 4. ANIMATION CANVAS MATRIX RAIN ---
+    // --- 4. CANVAS MATRIX RAIN ANIMATION ---
     const canvas = document.getElementById('matrix-canvas');
     if (canvas) {
         const ctx = canvas.getContext('2d');
@@ -104,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             for (let i = 0; i < drops.length; i++) {
                 const text = chars.charAt(Math.floor(Math.random() * chars.length));
-                
+
                 if (Math.random() > 0.85) {
                     ctx.fillStyle = "#00f2fe";
                 } else {
@@ -124,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
         drawMatrix();
     }
 
-    // --- 5. PROGRESSION DU CHARGEMENT ---
+    // --- 5. SYSTEM LOADER & PROGRESS BAR ---
     const percentElement = document.getElementById('loader-percent');
     const loaderBar = document.getElementById('loader-bar');
     const loader = document.getElementById('cyber-loader');
@@ -146,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 50);
     }
 
-    // --- 6. GESTION DES FORMULAIRES D'AUTHENTIFICATION ---
+    // --- 6. SOUMISSION DES FORMULAIRES AUTH ---
     const registerForm = document.getElementById('registerForm');
     if (registerForm) {
         registerForm.addEventListener('submit', async (e) => {
@@ -155,8 +158,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const originalBtnText = submitBtn ? submitBtn.innerText : '';
 
             const payload = {
-                nom: document.getElementById('regName')?.value || '',
-                email: document.getElementById('regEmail')?.value || '',
+                nom: document.getElementById('regName')?.value.trim() || '',
+                email: document.getElementById('regEmail')?.value.trim() || '',
                 password: document.getElementById('regPassword')?.value || ''
             };
 
@@ -183,10 +186,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     alert("Inscription réussie ! Un code d'activation a été envoyé à votre adresse e-mail.");
                     switchAuthTab('login');
                 } else {
-                    alert(`Erreur : ${result.error || 'Échec de l\'inscription.'}`);
+                    alert(`Erreur : ${sanitizeHTML(result.error || 'Échec de l\'inscription.')}`);
                 }
             } catch (err) {
-                console.error("Erreur Inscription :", err);
+                console.error("[AUTH REGISTRATION ERROR]:", err);
                 alert("Erreur de connexion au serveur d'authentification.");
             } finally {
                 if (submitBtn) {
@@ -205,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const originalBtnText = submitBtn ? submitBtn.innerText : '';
 
             const payload = {
-                email: document.getElementById('loginEmail')?.value || '',
+                email: document.getElementById('loginEmail')?.value.trim() || '',
                 password: document.getElementById('loginPassword')?.value || ''
             };
 
@@ -230,14 +233,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (response.ok && result.success && result.token) {
                     localStorage.setItem('token', result.token);
-                    alert(`Authentification réussie ! Bienvenue ${result.user?.nom || 'sur DorkNet'}.`);
+                    alert(`Authentification réussie ! Bienvenue ${sanitizeHTML(result.user?.nom || 'sur DorkNet')}.`);
                     closeAuthModal();
                     window.location.reload();
                 } else {
-                    alert(`Erreur : ${result.error || 'Identifiants invalides.'}`);
+                    alert(`Erreur : ${sanitizeHTML(result.error || 'Identifiants invalides.')}`);
                 }
             } catch (err) {
-                console.error("Erreur Connexion :", err);
+                console.error("[AUTH LOGIN ERROR]:", err);
                 alert("Impossible de contacter le serveur d'authentification.");
             } finally {
                 if (submitBtn) {
@@ -249,14 +252,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// --- 7. SÉCURITÉ & SANITIZATION XSS ---
+// ============================================================
+// HELPER UTILITIES & SECURITY
+// ============================================================
+
 function sanitizeHTML(str) {
+    if (typeof str !== 'string') return '';
     const temp = document.createElement('div');
     temp.textContent = str;
     return temp.innerHTML;
 }
 
-// --- 8. CLIENT API ET GESTION DES JETONS DE SÉCURITÉ ---
 function getAuthHeaders() {
     const token = localStorage.getItem('token');
     return {
@@ -265,7 +271,6 @@ function getAuthHeaders() {
     };
 }
 
-// --- 9. ETAT D'AUTHENTIFICATION ET ADAPTATION UI ---
 function checkAuthState() {
     const token = localStorage.getItem('token');
     const authButtons = document.querySelectorAll('.auth-btn, [onclick*="openAuthModal"]');
@@ -275,7 +280,7 @@ function checkAuthState() {
             btn.innerText = "Mon Compte";
             btn.onclick = (e) => {
                 e.preventDefault();
-                if (confirm("Voulez-vous vous déconnecter ?")) {
+                if (confirm("Voulez-vous vous déconnecter de votre session ?")) {
                     localStorage.removeItem('token');
                     window.location.reload();
                 }
@@ -284,7 +289,10 @@ function checkAuthState() {
     }
 }
 
-// --- 10. FONCTIONS GLOBALES POUR LA MODALE D'AUTHENTIFICATION ---
+// ============================================================
+// GLOBAL MODAL CONTROLLERS
+// ============================================================
+
 function openAuthModal(mode) {
     const modal = document.getElementById('authModal');
     if (modal) {
