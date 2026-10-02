@@ -131,6 +131,84 @@ document.addEventListener('DOMContentLoaded', () => {
             if (progress >= 100) clearInterval(interval);
         }, 50);
     }
+
+    // --- 9. INTERCEPTION DES FORMULAIRES & AUTHENTIFICATION OTP ---
+    const registerForm = document.getElementById('registerForm');
+    const loginForm = document.getElementById('loginForm');
+
+    // Traitement du formulaire d'inscription / Connexion (Demande d'OTP)
+    const handleAuthSubmit = async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const emailInput = form.querySelector('input[type="email"]');
+        const submitBtn = form.querySelector('button[type="submit"]');
+
+        if (!emailInput || !emailInput.value) {
+            alert("Veuillez saisir une adresse e-mail valide.");
+            return;
+        }
+
+        const email = emailInput.value.trim();
+        const originalBtnText = submitBtn ? submitBtn.innerText : '';
+
+        try {
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerText = "Envoi du code OTP...";
+            }
+
+            // Étape 1 : Demande du code OTP au backend Flask
+            const response = await fetch('/api/auth/request-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                // Étape 2 : Saisie du code OTP par l'utilisateur
+                const userOtp = prompt(`Un code de validation a été envoyé à : ${email}\nVeuillez saisir votre code à 6 chiffres :`);
+
+                if (!userOtp) {
+                    alert("Validation annulée.");
+                    return;
+                }
+
+                // Étape 3 : Vérification du code OTP auprès du backend
+                const verifyResponse = await fetch('/api/auth/verify-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, otp: userOtp.trim() })
+                });
+
+                const verifyResult = await verifyResponse.json();
+
+                if (verifyResponse.ok && verifyResult.success) {
+                    // Stockage du jeton JWT dans le navigateur
+                    localStorage.setItem('token', verifyResult.token);
+                    alert("Authentification réussie ! Bienvenue sur DorkNet.");
+                    closeAuthModal();
+                    window.location.reload();
+                } else {
+                    alert(`Erreur : ${verifyResult.error || 'Code OTP incorrect.'}`);
+                }
+            } else {
+                alert(`Erreur : ${result.error || 'Échec de l\'envoi du code OTP.'}`);
+            }
+        } catch (err) {
+            console.error("Erreur d'authentification :", err);
+            alert("Impossible de contacter le serveur d'authentification.");
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = originalBtnText;
+            }
+        }
+    };
+
+    if (registerForm) registerForm.addEventListener('submit', handleAuthSubmit);
+    if (loginForm) loginForm.addEventListener('submit', handleAuthSubmit);
 });
 
 // --- 6. SÉCURITÉ & SANITIZATION XSS ---
