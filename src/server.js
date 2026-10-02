@@ -18,6 +18,10 @@ const { authenticateToken, JWT_SECRET } = require('./authMiddleware');
 const { createSignedAuditPDF } = require('./generatePDF');
 
 const app = express();
+
+// Confiance au proxy de Render (indispensable pour express-rate-limit)
+app.set('trust proxy', 1);
+
 const PORT = process.env.PORT || 5000;
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -69,10 +73,15 @@ function sanitizeInput(str) {
 // CONFIGURATION TRANSPORTEUR NODEMAILER
 // ==========================================
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
   auth: {
     user: process.env.GMAIL_USER || 'dorknet2024@gmail.com',
     pass: process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASS
+  },
+  tls: {
+    rejectUnauthorized: false
   }
 });
 
