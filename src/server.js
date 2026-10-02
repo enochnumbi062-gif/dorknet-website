@@ -127,8 +127,13 @@ const JWT_AUDIENCE =
   'dorknet-client';
 
 const JWT_TTL =
+  process.env.JWT_EXPIRES_IN ||
   process.env.JWT_TTL ||
   '12h';
+
+const OTP_SECRET =
+  process.env.OTP_SECRET ||
+  JWT_SECRET;
 
 const TRUST_PROXY =
   process.env.TRUST_PROXY === 'true';
@@ -764,7 +769,7 @@ function hashOTP(
   return crypto
     .createHmac(
       'sha256',
-      JWT_SECRET
+      OTP_SECRET
     )
     .update(
       `${email}:${otp}`
@@ -1071,6 +1076,9 @@ function publicUser(
     telephone:
       user.telephone || '',
 
+    role:
+      user.role || 'user',
+
     isVerified:
       Boolean(
         user.isVerified
@@ -1102,44 +1110,25 @@ function issueAccessToken(
       Date.now() / 1000
     );
 
-  return jwt.sign(
+  const payload = {
+    sub: user.id,
+    id: user.id,
+    email: user.email,
+    nom: user.nom,
+    role: user.role || 'user',
+    typ: 'access',
+    jti: crypto.randomUUID(),
+    iat: now
+  };
 
-    {
-      sub:
-        user.id,
+  const options = {
+    algorithm: process.env.JWT_ALGORITHM || 'HS256',
+    expiresIn: process.env.JWT_EXPIRES_IN || JWT_TTL,
+    ...(JWT_ISSUER ? { issuer: JWT_ISSUER } : {}),
+    ...(JWT_AUDIENCE ? { audience: JWT_AUDIENCE } : {})
+  };
 
-      email:
-        user.email,
-
-      nom:
-        user.nom,
-
-      typ:
-        'access',
-
-      jti:
-        crypto.randomUUID(),
-
-      iat:
-        now
-    },
-
-    JWT_SECRET,
-
-    {
-      algorithm:
-        'HS256',
-
-      expiresIn:
-        JWT_TTL,
-
-      issuer:
-        JWT_ISSUER,
-
-      audience:
-        JWT_AUDIENCE
-    }
-  );
+  return jwt.sign(payload, JWT_SECRET, options);
 }
 
 
@@ -1830,6 +1819,9 @@ app.post(
         email,
 
         telephone,
+
+        role:
+          'user',
 
         password:
           passwordHash,
@@ -3207,24 +3199,3 @@ server =
 // ============================================================
 
 module.exports = app;
-const token = jwt.sign(
-  {
-    sub: user.id,
-    id: user.id,
-    email: user.email,
-    nom: user.nom,
-    role: user.role || 'user',
-    jti: crypto.randomUUID()
-  },
-  JWT_SECRET,
-  {
-    algorithm: process.env.JWT_ALGORITHM || 'HS256',
-    expiresIn: process.env.JWT_EXPIRES_IN || '12h',
-    ...(process.env.JWT_ISSUER
-      ? { issuer: process.env.JWT_ISSUER }
-      : {}),
-    ...(process.env.JWT_AUDIENCE
-      ? { audience: process.env.JWT_AUDIENCE }
-      : {})
-  }
-);
