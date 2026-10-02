@@ -3,10 +3,10 @@ const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
-const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const { Resend } = require('resend');
 const { GoogleGenAI } = require('@google/genai');
 
 // Laisser simplement la lecture depuis l'environnement :
@@ -25,11 +25,17 @@ app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
 // ==========================================
-// INITIALISATION AGATA-AI (GEMINI)
+// INITIALISATION DES SERVICES EXTERNES
 // ==========================================
 const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
+
+if (!RESEND_API_KEY) {
+  console.warn('[WARNING] RESEND_API_KEY non configurée. Les emails seront simulés dans la console.');
+}
 
 // ==========================================
 // MIDDLEWARES DE SÉCURITÉ & PARSING
@@ -69,30 +75,6 @@ function sanitizeInput(str) {
   })[m]);
 }
 
-// ==========================================
-// CONFIGURATION TRANSPORTEUR NODEMAILER
-// ==========================================
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.GMAIL_USER || 'dorknet2024@gmail.com',
-    pass: process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASS
-  },
-  tls: {
-    rejectUnauthorized: false
-  }
-});
-
-transporter.verify((error) => {
-  if (error) {
-    console.error('[ERREUR] Connexion SMTP :', error.message);
-  } else {
-    console.log('[OK] Serveur SMTP DorkNet opérationnel.');
-  }
-});
-
 function generateOTP() {
   return crypto.randomInt(100000, 999999).toString();
 }
@@ -130,30 +112,33 @@ app.post('/api/audit', auditLimiter, async (req, res) => {
       console.warn("[WARNING] Échec de la génération du PDF d'audit :", pdfErr.message);
     }
 
-    const adminEmail = process.env.GMAIL_USER || 'dorknet2024@gmail.com';
+    if (resend) {
+      const emailPayload = {
+        from: 'DorkNet Security <onboarding@resend.dev>',
+        to: [email],
+        subject: `Accusé de réception & NDA - Audit DorkNet`,
+        html: `
+          <div style="font-family: Arial, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 20px;">
+            <h2 style="color: #06b6d4;">Bonjour ${nom},</h2>
+            <p>Nous vous confirmons la bonne réception de votre demande d'audit pour le service : <strong>${service}</strong>.</p>
+            <p>L'accusé de réception signé numériquement et incluant le NDA est joint à ce courriel.</p>
+            <br>
+            <p>Cordialement,<br><strong>L'équipe DorkNet Security</strong></p>
+          </div>
+        `
+      };
 
-    const clientMailOptions = {
-      from: `"DorkNet Security" <${adminEmail}>`,
-      to: email,
-      subject: `Accusé de réception & NDA - Audit DorkNet`,
-      html: `
-        <div style="font-family: Arial, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 20px;">
-          <h2 style="color: #06b6d4;">Bonjour ${nom},</h2>
-          <p>Nous vous confirmons la bonne réception de votre demande d'audit pour le service : <strong>${service}</strong>.</p>
-          <p>L'accusé de réception signé numériquement et incluant le NDA est joint à ce courriel.</p>
-          <br>
-          <p>Cordialement,<br><strong>L'équipe DorkNet Security</strong></p>
-        </div>
-      `,
-      attachments: pdfBuffer ? [{
-        filename: `Accuse_Reception_DorkNet.pdf`,
-        content: pdfBuffer,
-        contentType: 'application/pdf'
-      }] : []
-    };
+      if (pdfBuffer) {
+        emailPayload.attachments = [{
+          filename: 'Accuse_Reception_DorkNet.pdf',
+          content: pdfBuffer.toString('base64')
+        }];
+      }
 
-    if (process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASS) {
-      await transporter.sendMail(clientMailOptions);
+      await resend.emails.send(emailPayload);
+      console.log(`[OK] E-mail d'audit envoyé via Resend à ${email}`);
+    } else {
+      console.log(`[SIMULATION EMAIL AUDIT] Pour: ${email} - Service: ${service}`);
     }
 
     return res.status(200).json({ 
@@ -202,16 +187,24 @@ app.post('/api/auth/register-otp', authLimiter, async (req, res) => {
     db.users.push(newUser);
     writeDB(db);
 
-    if (process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASS) {
-      await transporter.sendMail({
-        from: `"DorkNet Security" <${process.env.GMAIL_USER || 'dorknet2024@gmail.com'}>`,
-        to: email,
+    if (resend) {
+      await resend.emails.send({
+        from: 'DorkNet Security <onboarding@resend.dev>',
+        to: [email],
         subject: `Code d'activation DorkNet : ${otpCode}`,
-        text: `Votre code de validation est : ${otpCode}`
+        html: `
+          <div style="font-family: Arial, sans-serif; background-color: #0d1117; color: #ffffff; padding: 20px;">
+            <h2>Activation de votre compte DorkNet</h2>
+            <p>Votre code de validation est : <strong style="font-size: 24px; color: #10b981;">${otpCode}</strong></p>
+          </div>
+        `
       });
+      console.log(`[OK] Code d'activation transmis via Resend à ${email}`);
+    } else {
+      console.log(`[SIMULATION OTP REGISTER] Code pour ${email} : ${otpCode}`);
     }
 
-    res.json({ success: true, message: "Code OTP transmitted par courrier électronique." });
+    res.json({ success: true, message: "Code OTP transmis par courrier électronique." });
   } catch (err) {
     console.error('[AUTH REGISTER ERROR]:', err);
     res.status(500).json({ error: "Échec de l'enregistrement." });
