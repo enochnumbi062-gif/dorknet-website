@@ -1,0 +1,14 @@
+# Web Framework & Extensions
+Flask==3.0.3
+Flask-Cors==4.0.0
+gunicorn==22.0.0
+
+# Authentication & Security
+PyJWT==2.8.0
+
+# HTTP & API Integrations
+requests==2.31.0
+sib-api-v3-sdk==7.6.0
+
+# Environment Management
+python-dotenv==1.0.1
