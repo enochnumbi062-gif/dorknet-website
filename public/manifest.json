@@ -1,0 +1,70 @@
+{
+  "name": "DorkNet Security",
+  "short_name": "DorkNet",
+  "description": "Plateforme d'audit de sécurité, de tests d'intrusion (Pentest) et d'expertise en cybersécurité.",
+  "id": "/",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#06b6d4",
+  "lang": "fr-FR",
+  "categories": [
+    "security",
+    "utilities",
+    "developer tools"
+  ],
+  "icons": [
+    {
+      "src": "/assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Demander un Audit",
+      "short_name": "Audit",
+      "description": "Réserver un audit de sécurité informatique",
+      "url": "/index.html#audit",
+      "icons": [
+        {
+          "src": "/assets/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Contact Direct",
+      "short_name": "Contact",
+      "description": "Entrer en contact avec l'équipe DorkNet",
+      "url": "/index.html#contact",
+      "icons": [
+        {
+          "src": "/assets/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

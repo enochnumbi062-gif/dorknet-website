@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DorkNet | Cybersécurité, Pentesting & Écosystème AGATA</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* --- Cyber Loader --- */
+        #cyber-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0d1117;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        #matrix-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            opacity: 0.25;
+        }
+
+        .loader-content {
+            position: relative;
+            z-index: 2;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            font-family: monospace;
+        }
+
+        .loader-title {
+            color: #00f2fe;
+            font-weight: bold;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px rgba(0, 242, 254, 0.5);
+        }
+
+        .loader-bar-container {
+            width: 100%;
+            height: 8px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .loader-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #00f2fe, #10b981);
+            box-shadow: 0 0 10px #00f2fe;
+            transition: width 0.1s linear;
+        }
+
+        .loader-status {
+            display: flex;
+            justify-content: space-between;
+            color: #8b949e;
+            font-size: 0.85rem;
+        }
+
+        /* --- Custom Styles Existing --- */
+        .hero .badge {
+            border: 1px solid #00f2fe;
+            color: #00f2fe;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        .hero h1 span.highlight-dorknet {
+            color: #00f2fe;
+            background: linear-gradient(90deg, #00f2fe, #4facfe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 15px rgba(0, 242, 254, 0.4);
+        }
+
+        .lang-select {
+            background-color: #161b22;
+            color: #f0f6fc;
+            border: 1px solid #30363d;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .lang-select option {
+            background-color: #0d1117;
+            color: #fff;
+        }
+
+        .community-section {
+            padding: 40px 20px;
+            background: rgba(22, 27, 34, 0.5);
+            border-top: 1px solid #30363d;
+            border-bottom: 1px solid #30363d;
+            margin-top: 40px;
+        }
+
+        .community-stats {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #10b981;
+            margin: 10px 0 5px 0;
+        }
+
+        .rating-stars {
+            color: #f59e0b;
+            margin-top: 10px;
+        }
+
+        /* --- Section Cube 3D Flottant --- */
+        .cube-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 60px 0;
+            background: transparent;
+            perspective: 1000px;
+        }
+
+        .scene {
+            width: 120px;
+            height: 120px;
+            perspective: 600px;
+        }
+
+        .cube {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: rotateCube 10s infinite linear, floatCube 3s infinite ease-in-out;
+        }
+
+        .cube-face {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            background: rgba(13, 17, 23, 0.85);
+            border: 2px solid #00f2fe;
+            color: #00f2fe;
+            font-size: 1.1rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.4);
+            backdrop-filter: blur(5px);
+        }
+
+        .front  { transform: rotateY(0deg) translateZ(60px); }
+        .back   { transform: rotateY(180deg) translateZ(60px); }
+        .right  { transform: rotateY(90deg) translateZ(60px); }
+        .left   { transform: rotateY(-90deg) translateZ(60px); }
+        .top    { transform: rotateX(90deg) translateZ(60px); font-size: 2rem; }
+        .bottom { transform: rotateX(-90deg) translateZ(60px); font-size: 2rem; }
+
+        @keyframes rotateCube {
+            from { transform: rotateX(15deg) rotateY(0deg); }
+            to   { transform: rotateX(15deg) rotateY(360deg); }
+        }
+
+        @keyframes floatCube {
+            0%, 100% { transform: translateY(0px) rotateX(15deg); }
+            50%      { transform: translateY(-12px) rotateX(15deg); }
+        }
+
+        /* --- Footer Styles --- */
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            text-align: left;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #30363d;
+        }
+
+        .footer-col h4 {
+            color: #fff;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .footer-col ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .footer-col ul li {
+            margin-bottom: 8px;
+        }
+
+        .footer-col ul li a {
+            color: #8b949e;
+            text-decoration: none;
+            transition: color 0.3s;
+            cursor: pointer;
+        }
+
+        .footer-col ul li a:hover {
+            color: #00f2fe;
+        }
+
+        .social-bar {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 0;
+        }
+
+        .social-bar a {
+            color: #8b949e;
+            font-size: 1.4rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #161b22;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #30363d;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .social-bar a:hover {
+            color: #00f2fe;
+            border-color: #00f2fe;
+            transform: translateY(-3px);
+        }
+
+        /* Widget Chatbot Structure & Vues Dynamiques */
+        .chat-widget-btn {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            background: #00f2fe;
+            color: #0d1117;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 242, 254, 0.4);
+            z-index: 999;
+            transition: transform 0.3s;
+        }
+
+        .chat-widget-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .chat-panel {
+            display: none;
+            position: fixed;
+            bottom: 90px;
+            right: 25px;
+            width: 360px;
+            height: 500px;
+            background: #ffffff;
+            color: #1a202c;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            z-index: 1000;
+            flex-direction: column;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .chat-header {
+            background: #ffffff;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: bold;
+            font-size: 1.05rem;
+        }
+
+        .chat-view {
+            display: none;
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background: #fafafa;
+            flex-direction: column;
+        }
+
+        .chat-view.active {
+            display: flex;
+        }
+
+        /* Vue Messages */
+        .chat-body-default {
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .chat-body-default i.main-icon {
+            font-size: 2.5rem;
+            color: #1e293b;
+            margin-bottom: 15px;
+        }
+
+        .chat-body-default h4 {
+            margin: 0 0 10px 0;
+            color: #0f172a;
+        }
+
+        .chat-body-default p {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-bottom: 20px;
+        }
+
+        .btn-send-msg {
+            background: #1e293b;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-send-msg:hover {
+            background: #0f172a;
+        }
+
+        /* Interface d'écriture active */
+        .chat-input-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            height: 100%;
+        }
+
+        .chat-history {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .chat-msg-item {
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            max-width: 85%;
+        }
+
+        .chat-msg-item.user {
+            background: #1e293b;
+            color: #fff;
+            align-self: flex-end;
+        }
+
+        .chat-msg-item.team {
+            background: #e2e8f0;
+            color: #0f172a;
+            align-self: flex-start;
+        }
+
+        .chat-input-box {
+            display: flex;
+            gap: 8px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 10px;
+        }
+
+        .chat-input-box textarea {
+            flex: 1;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 8px;
+            resize: none;
+            outline: none;
+            font-size: 0.85rem;
+            height: 40px;
+        }
+
+        .chat-input-box button {
+            background: #00f2fe;
+            color: #0d1117;
+            border: none;
+            padding: 0 15px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Vue Accueil (Home) */
+        .home-section-title {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #475569;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            margin-top: 12px;
+        }
+
+        .team-panel-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .team-member-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .member-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: #1e293b;
+            color: #00f2fe;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            position: relative;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            border: 2px solid #fff;
+        }
+
+        .status-dot.online { background: #10b981; }
+        .status-dot.offline { background: #94a3b8; }
+
+        .member-info h5 {
+            margin: 0;
+            font-size: 0.85rem;
+            color: #0f172a;
+        }
+
+        .member-info p {
+            margin: 2px 0 0 0;
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        .offline-notifications {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .notification-item {
+            border-left: 3px solid #00f2fe;
+            padding-left: 8px;
+        }
+
+        .notification-item p {
+            margin: 0;
+            font-size: 0.8rem;
+            color: #334155;
+        }
+
+        .notification-item span {
+            font-size: 0.7rem;
+            color: #94a3b8;
+        }
+
+        /* Vue Aide (Help) */
+        .help-content h4 {
+            margin: 0 0 10px 0;
+            color: #0f172a;
+            font-size: 1rem;
+        }
+
+        .help-content h5 {
+            margin: 12px 0 4px 0;
+            color: #1e293b;
+            font-size: 0.85rem;
+        }
+
+        .help-content p, .help-content li {
+            font-size: 0.8rem;
+            color: #475569;
+            line-height: 1.4;
+        }
+
+        .help-content ul {
+            padding-left: 15px;
+            margin: 5px 0;
+        }
+
+        .chat-footer-nav {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            border-top: 1px solid #e2e8f0;
+            background: #fff;
+        }
+
+        .chat-footer-nav div {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #64748b;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .chat-footer-nav div.active {
+            color: #0f172a;
+            font-weight: bold;
+        }
+
+        .chat-footer-nav i {
+            font-size: 1.1rem;
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        /* Modal Générique (Information & Mentions Légales) */
+        .info-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 2500;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .info-modal-box {
+            width: 100%;
+            max-width: 750px;
+            max-height: 85vh;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 242, 254, 0.2);
+        }
+
+        .info-modal-header {
+            background: #161b22;
+            padding: 18px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #30363d;
+            color: #00f2fe;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .info-modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            color: #c9d1d9;
+            line-height: 1.6;
+        }
+
+        .info-modal-body h3 {
+            color: #00f2fe;
+            margin-top: 18px;
+            margin-bottom: 8px;
+        }
+
+        .info-modal-body p {
+            margin-bottom: 12px;
+        }
+
+        .info-modal-body ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        /* Modal Agata-AI Interface */
+        .agata-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .agata-box {
+            width: 90%;
+            max-width: 650px;
+            height: 520px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .agata-header {
+            background: #161b22;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #30363d;
+            color: #00f2fe;
+            font-weight: bold;
+        }
+
+        .agata-logs {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            color: #c9d1d9;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        .agata-logs p {
+            margin-bottom: 10px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+        }
+
+        .agata-input-area {
+            display: flex;
+            padding: 10px;
+            background: #161b22;
+            border-top: 1px solid #30363d;
+        }
+
+        .agata-input-area input[type="text"] {
+            flex: 1;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            color: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .agata-input-area button {
+            background: #00f2fe;
+            color: #0d1117;
+            border: none;
+            padding: 10px 15px;
+            margin-left: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Cyber Loader Screen -->
+    <div id="cyber-loader">
+        <canvas id="matrix-canvas"></canvas>
+        <div class="loader-content">
+            <div class="loader-title">DOWNLOADING DORKNET...</div>
+            <div class="loader-bar-container">
+                <div class="loader-bar" id="loader-bar"></div>
+            </div>
+            <div class="loader-status">
+                <span>AUTHENTICATING DORKNET</span>
+                <span id="loader-percent">0%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Element caché requis par Google Translate -->
+    <div id="google_translate_element" style="display:none;"></div>
+
+    <!-- Navigation Flottante -->
+    <header class="navbar-container">
+        <nav class="navbar">
+            <div class="logo">
+                <i class="fa-solid fa-shield-halved"></i> Dork<span>Net</span>
+            </div>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="#accueil" class="active">Accueil</a></li>
+                <li><a href="#services">Nos Services</a></li>
+                <li><a href="#projets">Nos Projets</a></li>
+                <li><a href="#formations">Nos Formations</a></li>
+                <li><a href="javascript:void(0)" onclick="openAgataModal()"><i class="fa-solid fa-brain"></i> Agata-AI</a></li>
+                <li><a href="#audit" class="btn-nav">Réserver ton Audit</a></li>
+                <li><a href="#contact">Contact</a></li>
+                
+                <!-- Boutons d'Authentification / Création de compte -->
+                <li><a href="javascript:void(0)" onclick="openAuthModal('login')" class="btn-login"><i class="fa-solid fa-right-to-bracket"></i> Connexion</a></li>
+                <li><a href="javascript:void(0)" onclick="openAuthModal('register')" class="btn-register"><i class="fa-solid fa-user-plus"></i> Créer un compte</a></li>
+                
+                <li>
+                    <select class="lang-select" id="lang-select">
+                        <option value="en">English</option>
+                        <option value="fr" selected>Français</option>
+                        <option value="de">Deutsch</option>
+                        <option value="it">Italiano</option>
+                        <option value="ja">日本語</option>
+                        <option value="es">Español</option>
+                        <option value="ko">한국어</option>
+                        <option value="zh-CN">简体中文</option>
+                        <option value="zh-TW">繁體中文</option>
+                        <option value="ru">Русский</option>
+                        <option value="id">Bahasa Indonesia</option>
+                        <option value="pt-BR">Português (BR)</option>
+                    </select>
+                </li>
+            </ul>
+            <div class="menu-toggle" id="mobileMenu">
+                <i class="fa-solid fa-bars"></i>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Section Accueil -->
+    <section id="accueil" class="hero">
+        <div class="hero-content">
+            <span class="badge">Expertise & Cybersécurité Avancée</span>
+            <h1>Sécurisez Vos Infrastructures Informatiques Avec <span class="highlight-dorknet">DorkNet</span></h1>
+            <p>Audits de sécurité, tests d'intrusion (Pentesting) et écosystème logiciel de pointe pour protéger vos actifs numériques contre les cybermenaces complexes.</p>
+            <div class="hero-buttons">
+                <a href="#audit" class="btn btn-primary">Réserver un Audit Gratuit</a>
+                <a href="https://wa.me/243859148909" target="_blank" class="btn btn-whatsapp">
+                    <i class="fa-brands fa-whatsapp"></i> Discuter sur WhatsApp
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section Services -->
+    <section id="services" class="section">
+        <div class="section-title">
+            <h2>Nos Domaines d'Expertise</h2>
+            <p>Des solutions sur mesure pour identifier et combler vos vulnérabilités système.</p>
+        </div>
+        <div class="grid-services">
+            <div class="card-service">
+                <i class="fa-solid fa-bug icon"></i>
+                <h3>Analyse de Vulnérabilité</h3>
+                <p>Détection automatisée et manuelle des failles de sécurité dans vos réseaux et équipements.</p>
+            </div>
+            <div class="card-service">
+                <i class="fa-solid fa-lock icon"></i>
+                <h3>Cryptage des Données</h3>
+                <p>Mise en place de mécanismes de chiffrement robustes pour sécuriser vos fichiers sensibles.</p>
+            </div>
+            <div class="card-service">
+                <i class="fa-solid fa-file-shield icon"></i>
+                <h3>Audit de Sécurité</h3>
+                <p>Évaluation globale de votre posture de sécurité informatique avec un rapport détaillé.</p>
+            </div>
+            <div class="card-service">
+                <i class="fa-solid fa-globe icon"></i>
+                <h3>Sécurité Web Applications</h3>
+                <p>Analyse OWASP Top 10 pour protéger vos applications web contre les injections et attaques.</p>
+            </div>
+            <div class="card-service">
+                <i class="fa-solid fa-database icon"></i>
+                <h3>Sécurité Base de Données</h3>
+                <p>Audits de configuration et protection de vos SGBD contre la fuite ou modification de données.</p>
+            </div>
+            <div class="card-service">
+                <i class="fa-solid fa-user-ninja icon"></i>
+                <h3>Pentesting Global</h3>
+                <p>Simulation réelle d'attaques cyber pour tester la résilience globale de votre entreprise.</p>
+            </div>
+        </div>
+
+        <!-- Offre Entreprise / Premium -->
+        <div class="premium-box">
+            <div class="premium-text">
+                <h3><i class="fa-solid fa-crown"></i> Offre Entreprise & Accompagnement Premium</h3>
+                <p>Toutes les entreprises bénéficient d'une <strong>analyse approfondie avec un rapport détaillé des vulnérabilités</strong>. Pour bénéficier d'un <strong>accompagnement technique dédié</strong> pour la résolution des failles et d'une <strong>assistance 24/7</strong>, optez pour le statut Premium. Tarification sur devis selon la complexité du problème.</p>
+            </div>
+            <a href="#contact" class="btn btn-secondary">Demander une Assistance Premium</a>
+        </div>
+    </section>
+
+    <!-- Section Nos Projets & Écosystème AGATA -->
+    <section id="projets" class="section bg-alt">
+        <div class="section-title">
+            <h2>Écosystème & Projets Stratégiques</h2>
+            <p>Découvrez notre suite logicielle propriétaire et nos architectures de défense réseau avancées.</p>
+        </div>
+        <div class="grid-services">
+            <div class="card-service">
+                <i class="fa-solid fa-shield-halved icon"></i>
+                <h3>DorkNet</h3>
+                <p>Plateforme centrale de coordination cyber, regroupant l'ingénierie d'audit, la formation éthique et la gestion des interventions d'urgence.</p>
+            </div>
+            <div class="card-service">
+                <i class="fa-solid fa-microchip icon"></i>
+                <h3>AGATA Core</h3>
+                <p>Noyau d'orchestration de sécurité haute performance, conçu pour le traitement en temps réel des événements réseau et la détection d'anomalies.</p>
+            </div>
+            <div class="card-service">
+                <i class="fa-solid fa-user-shield icon"></i>
+                <h3>Agata-Senior</h3>
+                <p>Module de supervision et de contrôle stratégique dédié à la gouvernance de sécurité pour les infrastructures d'entreprise à haut risque.</p>
+            </div>
+            <div class="card-service">
+                <i class="fa-solid fa-ghost icon"></i>
+                <h3>Agata-Ghost</h3>
+                <p>Agent de reconnaissance furtive et d'audit en mode aveugle, opérant sans empreinte réseau pour évaluer la réactivité des mécanismes DEFCON.</p>
+            </div>
+            <div class="card-service">
+                <i class="fa-solid fa-magnifying-glass-chart icon"></i>
+                <h3>Agata-Investigation</h3>
+                <p>Suite d'analyse forensique avancée (DFIR) permettant la traçabilité des intrusions, l'extraction de preuves numériques et la reconstruction d'attaques.</p>
+            </div>
+            <div class="card-service">
+                <i class="fa-solid fa-terminal icon"></i>
+                <h3>Agata-OS</h3>
+                <p>Environnement d'exécution Linux optimisé et durci, pré-configuré avec l'ensemble des outils offensifs et défensifs de l'écosystème AGATA.</p>
+            </div>
+            <div class="card-service">
+                <i class="fa-solid fa-network-wired icon"></i>
+                <h3>Agata-DRX</h3>
+                <p>Module de réponse automatique aux incidents (XDR) orchestrant l'isolation de segments réseau compromis et le blocage dynamique des menaces.</p>
+            </div>
+            <div class="card-service">
+                <i class="fa-solid fa-eye icon"></i>
+                <h3>Agata-Eyes</h3>
+                <p>Système de télémétrie et de visualisation réseau en temps réel, offrant une cartographie complète des flux et la détection d'exfiltration de données.</p>
+            </div>
+            <div class="card-service">
+                <i class="fa-solid fa-diagram-project icon"></i>
+                <h3>Agata-2X</h3>
+                <p>Moteur d'analyse de corrélation de journaux de seconde génération, accélérant le traitement des logs pour réduire le temps moyen de détection (MTTD).</p>
+            </div>
+            <div class="card-service">
+                <i class="fa-solid fa-brain icon"></i>
+                <h3>Agata-AI</h3>
+                <p>Moteur d'intelligence artificielle intégré exploitant des modèles de Machine Learning pour l'analyse prédictive des vecteurs d'attaque zero-day.</p>
+            </div>
+            <div class="card-service">
+                <i class="fa-solid fa-vault icon"></i>
+                <h3>Agata-Crypto Vault</h3>
+                <p>Coffre-fort numérique de haute sécurité utilisant des algorithmes de chiffrement post-quantique pour la protection des secrets et clés d'infrastructure.</p>
+            </div>
+            <div class="card-service">
+                <i class="fa-solid fa-building-columns icon"></i>
+                <h3>ProFin-AI</h3>
+                <p>Solution spécialisée dans l'audit de sécurité des API financières, la détection des fraudes transactionnelles et le durcissement des passerelles de paiement.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section Formations -->
+    <section id="formations" class="section">
+        <div class="section-title">
+            <h2>Formations en Ethical Hacking</h2>
+            <p>Montez en compétences grâce à nos cursus pratiques dispensés en ligne.</p>
+        </div>
+        <div class="grid-courses">
+            <div class="card-course">
+                <span class="tag free">Gratuit</span>
+                <h3>Niveau Débutant</h3>
+                <p>Les fondamentaux de la cybersécurité, réseaux, Linux et bases du hacking éthique.</p>
+                <ul class="course-features">
+                    <li><i class="fa-solid fa-check"></i> Accès direct via canal Telegram</li>
+                    <li><i class="fa-solid fa-check"></i> Exercices pratiques basiques</li>
+                    <li><i class="fa-solid fa-check"></i> Support communautaire</li>
+                </ul>
+                <a href="https://t.me/Dorkneet" target="_blank" class="btn btn-outline">
+                    <i class="fa-brands fa-telegram"></i> Rejoindre sur Telegram (@Dorkneet)
+                </a>
+            </div>
+
+            <div class="card-course featured">
+                <span class="tag paid">Payant</span>
+                <h3>Niveau Avancé</h3>
+                <p>Techniques poussées d'exploitation, analyse de malware et Pentesting applicatif.</p>
+                <ul class="course-features">
+                    <li><i class="fa-solid fa-check"></i> Formation via canal privé Telegram</li>
+                    <li><i class="fa-solid fa-check"></i> Labs d'entraînement dédiés</li>
+                    <li><i class="fa-solid fa-check"></i> Support technique prioritaire</li>
+                </ul>
+                <a href="https://t.me/Dorkneet" target="_blank" class="btn btn-primary">
+                    <i class="fa-brands fa-telegram"></i> S'inscrire via Telegram
+                </a>
+            </div>
+
+            <div class="card-course">
+                <span class="tag custom">Sur Demande</span>
+                <h3>Niveau Senior</h3>
+                <p>Red Teaming, Post-Exploitation et sécurité d'infrastructure critique.</p>
+                <ul class="course-features">
+                    <li><i class="fa-solid fa-check"></i> Programme 100% personnalisé</li>
+                    <li><i class="fa-solid fa-check"></i> Mentorat direct 1-on-1</li>
+                    <li><i class="fa-solid fa-check"></i> Attestation de spécialisation</li>
+                </ul>
+                <a href="https://t.me/Dorkneet" target="_blank" class="btn btn-outline">
+                    <i class="fa-brands fa-telegram"></i> Demander une Session
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section Communauté & Statistiques -->
+    <div class="community-section">
+        <div class="section-title" style="margin-bottom: 20px;">
+            <h2>Communauté</h2>
+            <p>Échangez avec d'autres étudiants en cybersécurité et rejoignez notre vaste communauté. Posez des questions, partagez vos connaissances et rencontrez des personnes qui suivent le même parcours que vous.</p>
+            <div class="community-stats">8 624 324</div>
+            <p style="font-weight: 600; color: #fff;">Apprenants inscrits</p>
+            <div class="rating-stars">
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section Réserver un Audit -->
+    <section id="audit" class="section bg-alt">
+        <div class="audit-container">
+            <div class="audit-text">
+                <h2>Réservez Votre Audit de Sécurité</h2>
+                <p>Obtenez un diagnostic précis de votre infrastructure. Remplissez le formulaire ci-contre ou échangez directement avec notre équipe technique.</p>
+                <div class="direct-contact">
+                    <p><i class="fa-solid fa-envelope"></i> dorknet2024@gmail.com</p>
+                    <p><i class="fa-brands fa-whatsapp"></i> +243 859 148 909</p>
+                    <p><i class="fa-brands fa-telegram"></i> @Dorkneet</p>
+                </div>
+            </div>
+            <form class="audit-form" id="auditForm" onsubmit="handleAuditSubmit(event)">
+                <div class="form-group">
+                    <input type="text" id="auditName" name="Nom" placeholder="Nom complet ou Nom de l'Entreprise" required>
+                </div>
+                <div class="form-group">
+                    <input type="email" id="auditEmail" name="Email" placeholder="Adresse Email professionnelle" required>
+                </div>
+                <div class="form-group">
+                    <select id="auditService" name="Service_Souhaite" required>
+                        <option value="" disabled selected>Sélectionnez le service souhaité</option>
+                        <option value="Audit Global">Audit de Sécurité Globale</option>
+                        <option value="Analyse Vulnerabilite">Analyse de Vulnérabilité</option>
+                        <option value="Pentesting Web/DB">Pentesting Web & Base de Données</option>
+                        <option value="Cryptage">Cryptage de Données</option>
+                        <option value="Assistance Premium">Assistance Technique Premium (24/7)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <textarea id="auditMessage" name="Message" rows="5" placeholder="Décrivez brièvement vos besoins ou votre infrastructure..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Envoyer la Demande d'Audit</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Section Contact -->
+    <section id="contact" class="section">
+        <div class="section-title">
+            <h2>Entrer en Contact Avec l'Équipe DorkNet</h2>
+            <p>Notre équipe répond à toutes vos questions d'ordre technique ou commercial.</p>
+        </div>
+        <div class="contact-cards">
+            <a href="mailto:dorknet2024@gmail.com" class="contact-card">
+                <i class="fa-solid fa-envelope"></i>
+                <h3>Email Direct</h3>
+                <p>dorknet2024@gmail.com</p>
+            </a>
+            
+            <a href="https://wa.me/243859148909" target="_blank" class="contact-card whatsapp">
+                <i class="fa-brands fa-whatsapp"></i>
+                <h3>WhatsApp Direct</h3>
+                <p>+243 859 148 909</p>
+            </a>
+
+            <a href="https://t.me/Dorkneet" target="_blank" class="contact-card telegram">
+                <i class="fa-brands fa-telegram" style="color: #0088cc;"></i>
+                <h3>Telegram Direct</h3>
+                <p>@Dorkneet</p>
+            </a>
+        </div>
+    </section>
+
+    <!-- Section Cube 3D Flottant -->
+    <div class="cube-section">
+        <div class="scene">
+            <div class="cube">
+                <div class="cube-face front">DorkNet</div>
+                <div class="cube-face back">DorkNet</div>
+                <div class="cube-face right">DorkNet</div>
+                <div class="cube-face left">DorkNet</div>
+                <div class="cube-face top"><i class="fa-solid fa-shield-halved"></i></div>
+                <div class="cube-face bottom"><i class="fa-solid fa-shield-halved"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer avec Liens Modales Interactifs -->
+    <footer>
+        <div class="footer-content" style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+            <div class="footer-grid">
+                <!-- Colonne Ressources -->
+                <div class="footer-col">
+                    <h4>Ressources</h4>
+                    <ul>
+                        <li><a onclick="openInfoModal('about')">À propos de nous</a></li>
+                        <li><a onclick="openInfoModal('redaction')">Rédaction</a></li>
+                        <li><a onclick="openInfoModal('communaute')">Communautés</a></li>
+                    </ul>
+                </div>
+                <!-- Colonne Confidentialité & Mentions Légales -->
+                <div class="footer-col">
+                    <h4>Confidentialité et mentions légales</h4>
+                    <ul>
+                        <li><a onclick="openInfoModal('privacy')">Politique de confidentialité</a></li>
+                        <li><a onclick="openInfoModal('terms')">Conditions d'utilisation</a></li>
+                        <li><a onclick="openInfoModal('ai_terms')">Conditions d'utilisation de l'IA</a></li>
+                        <li><a onclick="openInfoModal('aup')">Politique d'utilisation acceptable</a></li>
+                        <li><a onclick="openInfoModal('cookies')">Politique relative aux cookies</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Liens Réseaux Sociaux -->
+            <div class="social-bar">
+                <a href="#" title="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>
+                <a href="#" title="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                <a href="https://t.me/Dorkneet" target="_blank" title="Telegram"><i class="fa-brands fa-telegram"></i></a>
+                <a href="#" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                <a href="#" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                <a href="#" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+
+            <p style="margin-top: 15px;">&copy; 2026 DorkNet Security. Tous droits réservés.</p>
+            <p>Protection des Infrastructures & Hacking Éthique.</p>
+        </div>
+    </footer>
+
+    <!-- Widget Chatbot Flottant Amélioré -->
+    <div class="chat-widget-btn" onclick="toggleChatPanel()">
+        <i class="fa-solid fa-comments"></i>
+    </div>
+
+    <div class="chat-panel" id="chatPanel">
+        <div class="chat-header">
+            <span id="chatHeaderTitle">Messages</span>
+            <i class="fa-solid fa-xmark" style="cursor: pointer;" onclick="toggleChatPanel()"></i>
+        </div>
+
+        <!-- Vue 1: Messages (Défaut + Interface Écriture) -->
+        <div class="chat-view active" id="viewMessages">
+            <div class="chat-body-default" id="chatDefaultState" style="display: flex; flex-direction: column; height: 100%;">
+                <i class="fa-regular fa-comment-dots main-icon"></i>
+                <h4>Aucun message</h4>
+                <p>Les messages de l'équipe s'afficheront ici</p>
+                <button class="btn-send-msg" onclick="enableMessageWriting()">
+                    Envoyer un message <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+
+            <div class="chat-input-wrapper" id="chatActiveState" style="display: none;">
+                <div class="chat-history" id="chatHistoryBox">
+                    <div class="chat-msg-item team">
+                        <strong>Équipe DorkNet :</strong> Bonjour ! Comment pouvons-nous vous aider aujourd'hui ?
+                    </div>
+                </div>
+                <div class="chat-input-box">
+                    <textarea id="userWidgetInput" placeholder="Écrivez votre message..." onkeypress="handleWidgetKey(event)"></textarea>
+                    <button onclick="sendWidgetMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vue 2: Home (Panel Membres & Notifications d'Absence) -->
+        <div class="chat-view" id="viewHome">
+            <div class="home-section-title">Membres de l'Équipe DorkNet</div>
+            <div class="team-panel-list">
+                <div class="team-member-card">
+                    <div class="member-avatar">
+                        DN
+                        <div class="status-dot online"></div>
+                    </div>
+                    <div class="member-info">
+                        <h5>Support DorkNet Core</h5>
+                        <p>En ligne - Réponse rapide</p>
+                    </div>
+                </div>
+                <div class="team-member-card">
+                    <div class="member-avatar">
+                        AG
+                        <div class="status-dot online"></div>
+                    </div>
+                    <div class="member-info">
+                        <h5>Équipe AGATA-AI</h5>
+                        <p>Disponible pour assistance IA</p>
+                    </div>
+                </div>
+                <div class="team-member-card">
+                    <div class="member-avatar">
+                        SEC
+                        <div class="status-dot offline"></div>
+                    </div>
+                    <div class="member-info">
+                        <h5>Cellule Pentest & Audit</h5>
+                        <p>Hors ligne - Retour sous peu</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="home-section-title">Notifications des Réponses (Absence)</div>
+            <div class="offline-notifications">
+                <div class="notification-item">
+                    <p><strong>Support DorkNet :</strong> Votre ticket de demande d'audit #482 a été traité par notre équipe.</p>
+                    <span>Il y a 2 heures</span>
+                </div>
+                <div class="notification-item">
+                    <p><strong>Équipe AGATA :</strong> Les nouveaux conteneurs de test sont disponibles dans votre espace d'apprentissage.</p>
+                    <span>Hier</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vue 3: Help (Documentation Complète Agata-AI) -->
+        <div class="chat-view" id="viewHelp">
+            <div class="help-content">
+                <h4>Manuel d'Utilisation : Agata-AI</h4>
+                <p><strong>Agata-AI</strong> est un assistant virtuel d'apprentissage et d'assistance technique de pointe, directement intégré à la plateforme DorkNet.</p>
+                
+                <h5>1. Ingénierie Logicielle & Développement</h5>
+                <ul>
+                    <li>Génération/refactoring de code (Python, Rust, Go, C/C++, JS).</li>
+                    <li>Débogage et optimisation algorithmique.</li>
+                    <li>Architectures Microservices et APIs REST/gRPC.</li>
+                </ul>
+
+                <h5>2. Cybersécurité & Réseaux</h5>
+                <ul>
+                    <li>Audit et bonnes pratiques OWASP Top 10.</li>
+                    <li>Explication des protocoles et cryptographie.</li>
+                    <li>Analyse de logs et durcissement (hardening) système.</li>
+                </ul>
+
+                <h5>3. Administration Système & DevOps</h5>
+                <ul>
+                    <li>Scripting Shell/Bash et automatisation de tâches.</li>
+                    <li>Gestion des environnements Linux/Unix.</li>
+                    <li>Pipelines CI/CD et conteneurisation.</li>
+                </ul>
+
+                <h5>Conseil de Rédaction</h5>
+                <p>Contextualisez vos demandes en fournissant le système d'exploitation utilisé, vos fragments de code ou les journaux d'erreurs exacts.</p>
+            </div>
+        </div>
+
+        <div class="chat-footer-nav">
+            <div id="navHome" onclick="switchWidgetTab('home')"><i class="fa-solid fa-house"></i>Accueil</div>
+            <div id="navMessages" class="active" onclick="switchWidgetTab('messages')"><i class="fa-solid fa-comment"></i>Messages</div>
+            <div id="navHelp" onclick="switchWidgetTab('help')"><i class="fa-solid fa-circle-question"></i>Aide</div>
+        </div>
+    </div>
+
+    <!-- Modal Générique d'Information / Mentions Légales -->
+    <div class="info-modal" id="infoModal">
+        <div class="info-modal-box">
+            <div class="info-modal-header">
+                <span id="infoModalTitle">Titre de la section</span>
+                <i class="fa-solid fa-xmark" style="cursor: pointer; color: #fff;" onclick="closeInfoModal()"></i>
+            </div>
+            <div class="info-modal-body" id="infoModalBody">
+                <!-- Contenu dynamique -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Authentification (Connexion / Inscription) -->
+    <div class="info-modal" id="authModal">
+        <div class="info-modal-box" style="max-width: 450px;">
+            <div class="info-modal-header">
+                <span id="authModalTitle">Créer un compte DorkNet</span>
+                <i class="fa-solid fa-xmark" style="cursor: pointer; color: #fff;" onclick="closeAuthModal()"></i>
+            </div>
+            <div class="info-modal-body">
+                <!-- Formulaire d'inscription -->
+                <form id="registerForm" onsubmit="handleRegisterSubmit(event)" style="display: flex; flex-direction: column; gap: 15px;">
+                    <div class="form-group">
+                        <input type="text" id="regName" placeholder="Nom complet" required style="width:100%; padding:10px; background:#161b22; border:1px solid #30363d; color:#fff; border-radius:6px;">
+                    </div>
+                    <div class="form-group">
+                        <input type="email" id="regEmail" placeholder="Adresse Email" required style="width:100%; padding:10px; background:#161b22; border:1px solid #30363d; color:#fff; border-radius:6px;">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="regPassword" placeholder="Mot de passe" required style="width:100%; padding:10px; background:#161b22; border:1px solid #30363d; color:#fff; border-radius:6px;">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Créer mon compte</button>
+                    <p style="font-size: 0.85rem; text-align: center; color: #8b949e;">Déjà un compte ? <a href="javascript:void(0)" onclick="switchAuthTab('login')" style="color:#00f2fe;">Se connecter</a></p>
+                </form>
+
+                <!-- Formulaire de connexion -->
+                <form id="loginForm" onsubmit="handleLoginSubmit(event)" style="display: none; flex-direction: column; gap: 15px;">
+                    <div class="form-group">
+                        <input type="email" id="loginEmail" placeholder="Adresse Email" required style="width:100%; padding:10px; background:#161b22; border:1px solid #30363d; color:#fff; border-radius:6px;">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="loginPassword" placeholder="Mot de passe" required style="width:100%; padding:10px; background:#161b22; border:1px solid #30363d; color:#fff; border-radius:6px;">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Se connecter</button>
+                    <p style="font-size: 0.85rem; text-align: center; color: #8b949e;">Pas encore de compte ? <a href="javascript:void(0)" onclick="switchAuthTab('register')" style="color:#00f2fe;">Créer un compte</a></p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interface Agata-AI Modal -->
+    <div class="agata-modal" id="agataModal">
+        <div class="agata-box">
+            <div class="agata-header">
+                <span><i class="fa-solid fa-brain"></i> Assistant Agata-AI </span>
+                <i class="fa-solid fa-xmark" style="cursor: pointer; color: #fff;" onclick="closeAgataModal()"></i>
+            </div>
+            <div class="agata-logs" id="agataLogs">
+                <p style="color: #00f2fe;">[AGATA initialized]</p>
+                <p>Bonjour ! Je suis <strong>Agata-AI</strong>. Posez-moi vos questions sur le pentesting, les tests de performance, le réseau ou l'informatique en général.</p>
+            </div>
+            <div class="agata-input-area">
+                <input type="text" id="agataInput" placeholder="Posez une question à Agata-AI..." onkeypress="handleAgataKey(event)">
+                <button onclick="sendAgataQuery()">Envoyer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Integration Google Translate API -->
+    <script type="text/javascript">
+    function googleTranslateElementInit() {
+        new google.translate.TranslateElement({pageLanguage: 'fr'}, 'google_translate_element');
+    }
+    </script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+    <script src="script.js"></script>
+    <script>
+        // Matrix Rain & Loader Controller
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*';
+        const fontSize = 14;
+        const columns = Math.floor(canvas.width / fontSize);
+        const drops = Array(columns).fill(1);
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(13, 17, 23, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#00f2fe';
+            ctx.font = fontSize + 'px monospace';
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = characters.charAt(Math.floor(Math.random() * characters.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+        const matrixInterval = setInterval(drawMatrix, 33);
+
+        // Progression de la barre de chargement
+        let progress = 0;
+        const loaderBar = document.getElementById('loader-bar');
+        const loaderPercent = document.getElementById('loader-percent');
+        const loader = document.getElementById('cyber-loader');
+
+        const progressInterval = setInterval(() => {
+            progress += Math.floor(Math.random() * 8) + 2;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(progressInterval);
+                setTimeout(() => {
+                    loader.style.opacity = '0';
+                    loader.style.visibility = 'hidden';
+                    clearInterval(matrixInterval);
+                }, 400);
+            }
+            loaderBar.style.width = progress + '%';
+            loaderPercent.innerText = progress + '%';
+        }, 50);
+
+        // Synchronisation du sélecteur de langue avec Google Translate
+        const langSelectElem = document.getElementById('lang-select');
+        if (langSelectElem) {
+            langSelectElem.addEventListener('change', function() {
+                var lang = this.value;
+                var gtCombo = document.querySelector('.goog-te-combo');
+                if (gtCombo) {
+                    gtCombo.value = lang;
+                    gtCombo.dispatchEvent(new Event('change'));
+                }
+            });
+        }
+
+        // Gestion de l'affichage du Chatbot
+        function toggleChatPanel() {
+            const panel = document.getElementById('chatPanel');
+            panel.style.display = (panel.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        // Navigation entre onglets du Widget Chatbot
+        function switchWidgetTab(tabName) {
+            document.querySelectorAll('.chat-view').forEach(view => view.classList.remove('active'));
+            document.querySelectorAll('.chat-footer-nav div').forEach(nav => nav.classList.remove('active'));
+
+            const title = document.getElementById('chatHeaderTitle');
+
+            if (tabName === 'home') {
+                document.getElementById('viewHome').classList.add('active');
+                document.getElementById('navHome').classList.add('active');
+                title.innerText = "Accueil & Équipe";
+            } else if (tabName === 'messages') {
+                document.getElementById('viewMessages').classList.add('active');
+                document.getElementById('navMessages').classList.add('active');
+                title.innerText = "Messages";
+            } else if (tabName === 'help') {
+                document.getElementById('viewHelp').classList.add('active');
+                document.getElementById('navHelp').classList.add('active');
+                title.innerText = "Aide & Documentation Agata-AI";
+            }
+        }
+
+        function enableMessageWriting() {
+            document.getElementById('chatDefaultState').style.display = 'none';
+            document.getElementById('chatActiveState').style.display = 'flex';
+        }
+
+        function sendWidgetMessage() {
+            const input = document.getElementById('userWidgetInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const box = document.getElementById('chatHistoryBox');
+            
+            const userMsg = document.createElement('div');
+            userMsg.className = 'chat-msg-item user';
+            userMsg.innerHTML = `<strong>Vous :</strong> ${text}`;
+            box.appendChild(userMsg);
+
+            input.value = '';
+            box.scrollTop = box.scrollHeight;
+
+            setTimeout(() => {
+                const teamMsg = document.createElement('div');
+                teamMsg.className = 'chat-msg-item team';
+                teamMsg.innerHTML = `<strong>Équipe DorkNet :</strong> Merci pour votre message. Un membre de l'équipe vous répondra dans un bref délai.`;
+                box.appendChild(teamMsg);
+                box.scrollTop = box.scrollHeight;
+            }, 1000);
+        }
+
+        function handleWidgetKey(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendWidgetMessage();
+            }
+        }
+
+        // Modales d'Authentification
+        function openAuthModal(mode) {
+            document.getElementById('authModal').style.display = 'flex';
+            switchAuthTab(mode);
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').style.display = 'none';
+        }
+
+        function switchAuthTab(mode) {
+            const regForm = document.getElementById('registerForm');
+            const loginForm = document.getElementById('loginForm');
+            const title = document.getElementById('authModalTitle');
+
+            if (mode === 'register') {
+                regForm.style.display = 'flex';
+                loginForm.style.display = 'none';
+                title.innerText = "Créer un compte DorkNet";
+            } else {
+                regForm.style.display = 'none';
+                loginForm.style.display = 'flex';
+                title.innerText = "Connexion DorkNet";
+            }
+        }
+
+        async function handleRegisterSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+
+            try {
+                const res = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Compte créé avec succès ! Veuillez vous connecter.');
+                    switchAuthTab('login');
+                } else {
+                    alert('Erreur lors de l\'inscription : ' + (data.error || 'Erreur réseau'));
+                }
+            } catch (err) {
+                alert('Erreur serveur lors de l\'inscription.');
+            }
+        }
+
+        async function handleLoginSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (data.success && data.token) {
+                    localStorage.setItem('token', data.token);
+                    alert('Connexion réussie !');
+                    closeAuthModal();
+                } else {
+                    alert('Erreur de connexion : ' + (data.error || 'Identifiants invalides'));
+                }
+            } catch (err) {
+                alert('Erreur serveur lors de la connexion.');
+            }
+        }
+
+        async function handleAuditSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('auditName').value;
+            const email = document.getElementById('auditEmail').value;
+            const service = document.getElementById('auditService').value;
+            const message = document.getElementById('auditMessage').value;
+
+            try {
+                const res = await fetch('/api/audit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, service, message })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Votre demande d\'audit a été envoyée avec succès.');
+                    document.getElementById('auditForm').reset();
+                } else {
+                    alert('Erreur lors de l\'envoi : ' + (data.error || 'Échec de transmission'));
+                }
+            } catch (err) {
+                alert('Erreur réseau lors de la demande d\'audit.');
+            }
+        }
+
+        // Agata-AI
+        function openAgataModal() {
+            document.getElementById('agataModal').style.display = 'flex';
+        }
+
+        function closeAgataModal() {
+            document.getElementById('agataModal').style.display = 'none';
+        }
+
+        async function sendAgataQuery() {
+            const input = document.getElementById('agataInput');
+            const logs = document.getElementById('agataLogs');
+            const query = input.value.trim();
+
+            if (!query) return;
+
+            const userMsg = document.createElement('p');
+            userMsg.style.color = '#fff';
+            userMsg.innerHTML = `<strong>Vous :</strong> ${query}`;
+            logs.appendChild(userMsg);
+
+            input.value = '';
+            logs.scrollTop = logs.scrollHeight;
+
+            const searchingMsg = document.createElement('p');
+            searchingMsg.style.color = '#8b949e';
+            searchingMsg.style.fontStyle = 'italic';
+            searchingMsg.id = 'tempSearch';
+            searchingMsg.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Agata-AI analyse et génère la réponse...`;
+            logs.appendChild(searchingMsg);
+            logs.scrollTop = logs.scrollHeight;
+
+            const token = localStorage.getItem('token');
+
+            try {
+                let replyText = "";
+
+                if (token) {
+                    const res = await fetch('/api/agata/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ message: query })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        replyText = data.response;
+                    } else {
+                        throw new Error(data.error || "Erreur d'authentification backend");
+                    }
+                } else {
+                    throw new Error("Authentification requise. Veuillez vous connecter pour interagir avec Agata-AI.");
+                }
+
+                const tempMsg = document.getElementById('tempSearch');
+                if (tempMsg) tempMsg.remove();
+
+                const aiMsg = document.createElement('p');
+                aiMsg.style.color = '#10b981';
+                aiMsg.innerHTML = `<strong>Agata-AI :</strong> ${replyText}`;
+                logs.appendChild(aiMsg);
+                logs.scrollTop = logs.scrollHeight;
+
+            } catch (error) {
+                const tempMsg = document.getElementById('tempSearch');
+                if (tempMsg) tempMsg.remove();
+
+                const errorMsg = document.createElement('p');
+                errorMsg.style.color = '#ef4444';
+                errorMsg.innerHTML = `<strong>Agata-AI (Erreur) :</strong> ${error.message}`;
+                logs.appendChild(errorMsg);
+                logs.scrollTop = logs.scrollHeight;
+            }
+        }
+
+        function handleAgataKey(e) {
+            if (e.key === 'Enter') {
+                sendAgataQuery();
+            }
+        }
+
+        // Modales Footer
+        const modalContent = {
+            about: {
+                title: "À propos de DorkNet",
+                html: `
+                    <h3>Présentation Générale</h3>
+                    <p>DorkNet est une plateforme spécialisée en cybersécurité avancée, ingénierie d'audit, hacking éthique et défense des infrastructures numériques. Elle combine formation pratique, outils d'investigation et un écosystème logiciel haute performance (suite AGATA).</p>
+                    <h3>Notre Vision & L'Idée</h3>
+                    <p>Face à la recrudescence et à la complexité des cyberattaques, DorkNet est né d'une idée centrale : démocratiser la cybersécurité défensive et offensive tout en fournissant des solutions d'audit concrètes, automatisées et souveraines.</p>
+                    <h3>Le Besoin auquel répond DorkNet</h3>
+                    <ul>
+                        <li><strong>Pénurie d'expertise :</strong> Combler le manque de compétences techniques via des cursus axés sur la pratique directe.</li>
+                        <li><strong>Vulnérabilité des infrastructures :</strong> Permettre aux entreprises de tester la résilience de leurs systèmes avant toute exploitation malveillante.</li>
+                        <li><strong>Complexité des outils :</strong> Centraliser l'orchestration de la sécurité et le monitoring en temps réel via l'écosystème AGATA.</li>
+                    </ul>
+                    <h3>Les Avantages de DorkNet</h3>
+                    <ul>
+                        <li><strong>Écosystème Intégré :</strong> Alignement direct entre audit, monitoring, forensic et chiffrement post-quantique.</li>
+                        <li><strong>Formations Orientées Pratique :</strong> Parcours adaptés (Débutant, Avancé, Senior) accompagnés de labs dédiés.</li>
+                        <li><strong>Accompagnement Premium :</strong> Support technique 24/7 et rapports d'audit détaillés pour les entreprises.</li>
+                    </ul>
+                `
+            },
+            redaction: {
+                title: "Section Rédaction & Publications",
+                html: `
+                    <p>Espace dédié aux publications techniques, analyses de vulnérabilités (CVE), bulletins de sécurité et guides de durcissement rédigés par l'équipe d'experts DorkNet.</p>
+                    <h3>Derniers Sujets Couverts</h3>
+                    <ul>
+                        <li>Analyse des failles Zero-Day et vecteurs d'attaque modernes.</li>
+                        <li>Mise en œuvre du chiffrement post-quantique dans les passerelles API.</li>
+                        <li>Méthodologies d'investigation forensique (DFIR) avec Agata-Investigation.</li>
+                    </ul>
+                `
+            },
+            communaute: {
+                title: "Communautés DorkNet",
+                html: `
+                    <p>Espace d'échange réunissant plus de 8,6 millions d'apprenants et de passionnés de cybersécurité à travers le monde.</p>
+                    <p>Rejoignez nos canaux pour poser des questions, partager vos connaissances et collaborer sur des exercices pratiques de Pentesting et de développement sécurisé.</p>
+                `
+            },
+            privacy: {
+                title: "Politique de confidentialité",
+                html: `
+                    <p>Chez DorkNet, la protection de vos données personnelles est une priorité absolue. Nous collectons uniquement les informations strictement nécessaires à la fourniture de nos services et formations.</p>
+                    <p>Vos informations ne sont jamais vendues ou transmises à des tiers. Les audits et analyses réalisés sur vos infrastructures restent sous le sceau d'une confidentialité stricte.</p>
+                `
+            },
+            terms: {
+                title: "Conditions d'utilisation",
+                html: `
+                    <p>En naviguant sur notre plateforme et en utilisant nos services, vous acceptez l'intégralité de nos conditions d'utilisation.</p>
+                    <p>Toutes les ressources pédagogiques, codes source et documentations fournis sur DorkNet sont protégés par le droit d'auteur. Toute reproduction non autorisée est strictement interdite.</p>
+                `
+            },
+            ai_terms: {
+                title: "Conditions d'utilisation de l'IA (Agata-AI)",
+                html: `
+                    <p>L'assistant <strong>Agata-AI</strong> est conçu exclusivement à des fins d'assistance technique, d'apprentissage et de guidage lors des tests de performance et d'audit.</p>
+                    <p>L'utilisation de cet assistant pour générer du code malveillant ou planifier des attaques cyber non autorisées sur des systèmes tiers est strictement prohibée.</p>
+                `
+            },
+            aup: {
+                title: "Politique d'utilisation acceptable",
+                html: `
+                    <p>Cette charte éthique régit l'usage de nos outils, logiciels et techniques dispensés au sein de nos formations.</p>
+                    <ul>
+                        <li>Interdiction formelle de mener des intrusions non autorisées ou des attaques par déni de service (DDoS).</li>
+                        <li>L'ensemble des compétences acquises doit être appliqué dans le respect des cadres légaux du hacking éthique.</li>
+                    </ul>
+                `
+            },
+            cookies: {
+                title: "Politique relative aux cookies",
+                html: `
+                    <p>Nous utilisons des cookies strictement techniques pour garantir le bon fonctionnement de notre site, la gestion de votre session et la persistance de vos préférences de langue.</p>
+                    <p>Aucun cookie d'analyse comportementale tierce ou d'affichage publicitaire n'est déposé sur votre équipement.</p>
+                `
+            }
+        };
+
+        function openInfoModal(key) {
+            const data = modalContent[key];
+            if (!data) return;
+            document.getElementById('infoModalTitle').innerText = data.title;
+            document.getElementById('infoModalBody').innerHTML = data.html;
+            document.getElementById('infoModal').style.display = 'flex';
+        }
+
+        function closeInfoModal() {
+            document.getElementById('infoModal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

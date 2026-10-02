@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DorkNet | Espace Client Premium</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .dashboard-grid { 
+            display: grid; 
+            grid-template-columns: 280px 1fr; 
+            gap: 20px; 
+            padding: 100px 20px 40px; 
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+        .sidebar { 
+            background: var(--bg-card, #1e293b); 
+            padding: 24px; 
+            border-radius: 12px; 
+            border: 1px solid var(--border-color, #334155); 
+            height: fit-content;
+        }
+        .main-content { 
+            background: var(--bg-card, #1e293b); 
+            padding: 30px; 
+            border-radius: 12px; 
+            border: 1px solid var(--border-color, #334155); 
+        }
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+        .status-badge { 
+            padding: 4px 10px; 
+            border-radius: 4px; 
+            font-size: 0.8rem; 
+            font-weight: bold; 
+            display: inline-block;
+            text-transform: uppercase;
+        }
+        .in_progress, .pending { 
+            background: rgba(6, 182, 212, 0.2); 
+            color: var(--accent-cyan, #06b6d4); 
+        }
+        .completed, .success { 
+            background: rgba(16, 185, 129, 0.2); 
+            color: var(--accent-green, #10b981); 
+        }
+        .audit-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+        }
+        .audit-table th, .audit-table td { 
+            padding: 14px 12px; 
+            text-align: left; 
+            border-bottom: 1px solid var(--border-color, #334155); 
+        }
+        .progress-bar-bg {
+            width: 100%;
+            background-color: #334155;
+            border-radius: 8px;
+            height: 8px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background-color: var(--accent-cyan, #06b6d4);
+            transition: width 0.3s ease;
+        }
+        .btn-block {
+            width: 100%;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 868px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                padding-top: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-grid">
+        <!-- Sidebar Espace Client -->
+        <div class="sidebar">
+            <h3 id="companyName"><i class="fa-solid fa-building"></i> Chargement...</h3>
+            <p style="color: var(--accent-green, #10b981); margin-top: 8px; font-size: 0.9rem;">
+                <i class="fa-solid fa-shield-halved"></i> Compte Client DorkNet
+            </p>
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-color, #334155);">
+            
+            <button onclick="requestPremiumUpgrade()" class="btn btn-primary btn-block">
+                <i class="fa-solid fa-crown"></i> Passer en Premium
+            </button>
+            <button onclick="downloadCertif()" class="btn btn-outline btn-block">
+                <i class="fa-solid fa-file-certificate"></i> Certificat CTF
+            </button>
+            <button onclick="logout()" class="btn btn-outline btn-block" style="border-color: #ef4444; color: #ef4444;">
+                <i class="fa-solid fa-right-from-bracket"></i> Déconnexion
+            </button>
+        </div>
+
+        <!-- Section Principale -->
+        <div class="main-content">
+            <h2>Suivi des Audits & Rapports de Vulnérabilités</h2>
+            <p style="color: #94a3b8; font-size: 0.95rem; margin-top: 5px;">
+                Consultez l'état d'avancement des audits de sécurité et téléchargez vos livrables officiels.
+            </p>
+
+            <div class="table-responsive">
+                <table class="audit-table">
+                    <thead>
+                        <tr>
+                            <th>Périmètre / Service</th>
+                            <th>Statut</th>
+                            <th>Avancement</th>
+                            <th>Rapport Final</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditRows">
+                        <tr><td colspan="4">Chargement des données...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function escapeHTML(str) {
+            return String(str || '').replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+            });
+        }
+
+        function getToken() {
+            return localStorage.getItem('dorknet_token') || localStorage.getItem('token');
+        }
+
+        async function loadDashboard() {
+            const token = getToken();
+            if (!token) { 
+                logout(); 
+                return; 
+            }
+
+            try {
+                const res = await fetch('/api/dashboard/audits', {
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (res.status === 401 || res.status === 403) {
+                    logout();
+                    return;
+                }
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    const userName = data.user ? (data.user.nom || data.user.email) : 'Espace Client';
+                    document.getElementById('companyName').innerHTML = `<i class="fa-solid fa-building"></i> ${escapeHTML(userName)}`;
+
+                    if (data.audits && data.audits.length > 0) {
+                        const rows = data.audits.map(a => {
+                            const progress = Math.min(100, Math.max(0, Number(a.progress || 0)));
+                            const statusClass = progress === 100 ? 'completed' : 'in_progress';
+                            const statusLabel = a.statusText || a.status || (progress === 100 ? 'Terminé' : 'En cours');
+
+                            return `
+                                <tr>
+                                    <td><strong>${escapeHTML(a.target || a.service || 'Audit Standard')}</strong></td>
+                                    <td><span class="status-badge ${statusClass}">${escapeHTML(statusLabel)}</span></td>
+                                    <td>
+                                        <div>${progress}%</div>
+                                        <div class="progress-bar-bg">
+                                            <div class="progress-bar-fill" style="width: ${progress}%;"></div>
+                                        </div>
+                                    </td>
+                                    <td>${a.reportUrl 
+                                        ? `<a href="${escapeHTML(a.reportUrl)}" class="btn btn-primary" download><i class="fa-solid fa-download"></i> PDF</a>` 
+                                        : '<span style="color: #94a3b8; font-size: 0.85rem;"><i class="fa-solid fa-clock"></i> En cours</span>'}
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('');
+                        document.getElementById('auditRows').innerHTML = rows;
+                    } else {
+                        document.getElementById('auditRows').innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px; color: #94a3b8;">Aucun audit actif en cours pour le moment.</td></tr>';
+                    }
+                } else {
+                    logout();
+                }
+            } catch (err) {
+                console.error('Erreur chargement tableau de bord :', err);
+                document.getElementById('auditRows').innerHTML = '<tr><td colspan="4" style="color: #ef4444; text-align:center;">Erreur de communication avec le serveur backend.</td></tr>';
+            }
+        }
+
+        async function requestPremiumUpgrade() {
+            const token = getToken();
+            try {
+                const res = await fetch('/api/user/upgrade-premium', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                alert(data.message || data.error);
+            } catch (err) {
+                alert("Impossible de soumettre la demande Premium.");
+            }
+        }
+
+        async function downloadCertif() {
+            const token = getToken();
+            try {
+                const res = await fetch('/api/certificate/generate', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    alert(err.error || "Échec de génération du certificat.");
+                    return;
+                }
+
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'Certificat_DorkNet.pdf';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            } catch (err) {
+                alert("Erreur lors de la récupération du certificat.");
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('dorknet_token');
+            localStorage.removeItem('token');
+            window.location.href = 'index.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', loadDashboard);
+    </script>
+</body>
+</html>
