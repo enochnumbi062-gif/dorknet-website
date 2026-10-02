@@ -1283,13 +1283,13 @@
         </div>
     </div>
 
-    <!-- Integration Google Translate API -->
+    <!-- Integration Google Translate API (Chargement Asynchrone Sécurisé) -->
     <script type="text/javascript">
     function googleTranslateElementInit() {
         new google.translate.TranslateElement({pageLanguage: 'fr'}, 'google_translate_element');
     }
     </script>
-    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async defer></script>
 
     <script src="script.js"></script>
     <script>
@@ -1360,6 +1360,16 @@
                 }
             });
         }
+
+        // Fermeture automatique des modales en cliquant sur l'arrière-plan
+        window.onclick = function(event) {
+            const infoModal = document.getElementById('infoModal');
+            const authModal = document.getElementById('authModal');
+            const agataModal = document.getElementById('agataModal');
+            if (event.target === infoModal) closeInfoModal();
+            if (event.target === authModal) closeAuthModal();
+            if (event.target === agataModal) closeAgataModal();
+        };
 
         // Gestion de l'affichage du Chatbot
         function toggleChatPanel() {
@@ -1560,24 +1570,22 @@
 
             try {
                 let replyText = "";
-
+                const headers = { 'Content-Type': 'application/json' };
                 if (token) {
-                    const res = await fetch('/api/agata/chat', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({ message: query })
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        replyText = data.response;
-                    } else {
-                        throw new Error(data.error || "Erreur d'authentification backend");
-                    }
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const res = await fetch('/api/agata/chat', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({ message: query })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    replyText = data.response;
                 } else {
-                    throw new Error("Authentification requise. Veuillez vous connecter pour interagir avec Agata-AI.");
+                    throw new Error(data.error || "Erreur de réponse backend");
                 }
 
                 const tempMsg = document.getElementById('tempSearch');
@@ -1652,7 +1660,7 @@
             privacy: {
                 title: "Politique de confidentialité",
                 html: `
-                    <p>Chez DorkNet, la protection de vos données personnelles est une priorité absolue. Nous collectons uniquement les informations strictement nécessaires à la fourniture de nos services et formations.</p>
+                    <p>Chez DorkNet, la protection de vos données personnelles est une priorité absolue. Nous collectons uniquement les informations strictly nécessaires à la fourniture de nos services et formations.</p>
                     <p>Vos informations ne sont jamais vendues ou transmises à des tiers. Les audits et analyses réalisés sur vos infrastructures restent sous le sceau d'une confidentialité stricte.</p>
                 `
             },
@@ -1667,7 +1675,7 @@
                 title: "Conditions d'utilisation de l'IA (Agata-AI)",
                 html: `
                     <p>L'assistant <strong>Agata-AI</strong> est conçu exclusivement à des fins d'assistance technique, d'apprentissage et de guidage lors des tests de performance et d'audit.</p>
-                    <p>L'utilisation de cet assistant pour générer du code malveillant ou planifier des attaques cyber non autorisées sur des systèmes tiers est strictement prohibée.</p>
+                    <p>L'utilisation de cet assistant pour générer du code malveillant ou planifier des attaques cyber non autorisées sur des systèmes tiers est strictly prohibée.</p>
                 `
             },
             aup: {
