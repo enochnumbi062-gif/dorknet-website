@@ -11,15 +11,10 @@ from urllib.parse import urlparse
 
 import jwt
 import requests
+import resend
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
-
-import sib_api_v3_sdk
-from sib_api_v3_sdk.rest import ApiException
-
-# Laisser simplement la lecture depuis l'environnement :
-DATABASE_URL = os.getenv("DATABASE_URL")
 
 # ==========================================
 # INITIALISATION ET CONFIGURATION
@@ -28,23 +23,23 @@ load_dotenv()
 
 app = Flask(__name__)
 
+# Laisser simplement la lecture depuis l'environnement :
+DATABASE_URL = os.getenv("DATABASE_URL")
+
 # Restriction du CORS à l'origine cliente si spécifiée
 CLIENT_URL = os.getenv("CLIENT_URL", "*")
 CORS(app, resources={r"/api/*": {"origins": CLIENT_URL}})
 
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", secrets.token_hex(32))
 JWT_SECRET = os.getenv("JWT_SECRET", secrets.token_hex(32))
-BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 SENDER_EMAIL = os.getenv("SENDER_EMAIL", "dorknet2024@gmail.com")
 SENDER_NAME = os.getenv("SENDER_NAME", "DorkNet Security")
 
-if BREVO_API_KEY:
-    configuration = sib_api_v3_sdk.Configuration()
-    configuration.api_key['api-key'] = BREVO_API_KEY
-    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
+if RESEND_API_KEY:
+    resend.api_key = RESEND_API_KEY
 else:
-    api_instance = None
-    print("[WARNING] BREVO_API_KEY non trouvée. Les e-mails seront simulés en console.")
+    print("[WARNING] RESEND_API_KEY non trouvée. Les e-mails seront simulés en console.")
 
 # ==========================================
 # STOCKAGE OTP CENTRALISÉ (REDIS / FALLBACK)
@@ -102,32 +97,32 @@ def is_private_or_loopback_ip(hostname):
         return True, None
 
 def send_email_otp(user_email, otp_code):
-    """Envoie le code OTP à l'utilisateur via l'API Brevo."""
-    if not api_instance:
+    """Envoie le code OTP à l'utilisateur via l'API Resend (HTTP/443)."""
+    if not RESEND_API_KEY:
         print(f"[OTP SIMULATION] Code OTP pour {user_email} : {otp_code}")
         return True
 
-    send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
-        to=[{"email": user_email}],
-        sender={"name": SENDER_NAME, "email": SENDER_EMAIL},
-        subject=f"Code d'authentification DorkNet : {otp_code}",
-        html_content=f"""
-        <div style="font-family: Arial, sans-serif; background-color: #0d1117; color: #ffffff; padding: 25px; border-radius: 8px; border: 1px solid #30363d;">
-            <h2 style="color: #06b6d4; margin-top: 0;">DorkNet Security</h2>
-            <p>Bonjour,</p>
-            <p>Voici votre code de validation à usage unique (OTP) pour sécuriser votre accès :</p>
-            <div style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #10b981; margin: 25px 0; background-color: #161b22; padding: 15px; text-align: center; border-radius: 6px;">
-                {otp_code}
-            </div>
-            <p>Ce code expire dans <b>5 minutes</b>.</p>
-        </div>
-        """
-    )
     try:
-        api_instance.send_transac_email(send_smtp_email)
+        r = resend.Emails.send({
+            "from": f"{SENDER_NAME} <onboarding@resend.dev>",
+            "to": [user_email],
+            "subject": f"Code d'authentification DorkNet : {otp_code}",
+            "html": f"""
+            <div style="font-family: Arial, sans-serif; background-color: #0d1117; color: #ffffff; padding: 25px; border-radius: 8px; border: 1px solid #30363d;">
+                <h2 style="color: #06b6d4; margin-top: 0;">DorkNet Security</h2>
+                <p>Bonjour,</p>
+                <p>Voici votre code de validation à usage unique (OTP) pour sécuriser votre accès :</p>
+                <div style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #10b981; margin: 25px 0; background-color: #161b22; padding: 15px; text-align: center; border-radius: 6px;">
+                    {otp_code}
+                </div>
+                <p>Ce code expire dans <b>5 minutes</b>.</p>
+            </div>
+            """
+        })
+        print(f"[OK] OTP envoyé via Resend à {user_email} (ID: {r.get('id') if isinstance(r, dict) else getattr(r, 'id', 'N/A')})")
         return True
-    except ApiException as e:
-        print(f"[ERROR] Erreur d'envoi Brevo API: {e}")
+    except Exception as e:
+        print(f"[ERROR] Échec d'envoi OTP via Resend: {str(e)}")
         return False
 
 # ==========================================
@@ -171,13 +166,13 @@ def handle_audit():
     if not nom or not email or not message:
         return jsonify({"error": "Tous les champs obligatoires doivent être renseignés."}), 400
 
-    if api_instance:
+    if RESEND_API_KEY:
         try:
-            send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
-                to=[{"email": SENDER_EMAIL}],
-                sender={"name": SENDER_NAME, "email": SENDER_EMAIL},
-                subject=f"DEMANDE D'AUDIT : {service or 'Général'}",
-                html_content=f"""
+            resend.Emails.send({
+                "from": f"{SENDER_NAME} <onboarding@resend.dev>",
+                "to": [SENDER_EMAIL],
+                "subject": f"DEMANDE D'AUDIT : {service or 'Général'}",
+                "html": f"""
                 <h3>Nouvelle demande d'audit DorkNet</h3>
                 <p><b>Nom :</b> {nom}</p>
                 <p><b>Email :</b> {email}</p>
@@ -185,10 +180,9 @@ def handle_audit():
                 <p><b>Message :</b></p>
                 <pre>{message}</pre>
                 """
-            )
-            api_instance.send_transac_email(send_smtp_email)
-        except ApiException as e:
-            print(f"[ERROR] Envoi mail d'audit: {e}")
+            })
+        except Exception as e:
+            print(f"[ERROR] Envoi mail d'audit via Resend: {e}")
 
     return jsonify({"success": True, "message": "Votre demande d'audit a été transmise avec succès !"}), 200
 
@@ -260,7 +254,7 @@ def express_scan(current_user):
     is_private, resolved_ip = is_private_or_loopback_ip(domain)
     if is_private:
         return jsonify({
-            "error": "Accès refusé. L'analyse d'adresses privées, locales ou non résolubles est strictement interdite."
+            "error": "Accès refusé. L'analyse d'adresses privées, locales ou non résolubles est strictly interdite."
         }), 403
 
     vulnerabilities = []
