@@ -1,4 +1,5 @@
 require('dotenv').config();
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
@@ -35,6 +36,9 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Servir les fichiers statiques HTML/CSS/JS depuis le dossier 'public'
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Limiteurs de requêtes anti-bruteforce / anti-spam
 const auditLimiter = rateLimit({
@@ -83,6 +87,13 @@ transporter.verify((error) => {
 function generateOTP() {
   return crypto.randomInt(100000, 999999).toString();
 }
+
+// ==========================================
+// ROUTE PRINCIPALE (FRONTEND)
+// ==========================================
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/index.html'));
+});
 
 // ==========================================
 // 1. ROUTE FORMULAIRE D'AUDIT
@@ -191,7 +202,7 @@ app.post('/api/auth/register-otp', authLimiter, async (req, res) => {
       });
     }
 
-    res.json({ success: true, message: "Code OTP transmis par courrier électronique." });
+    res.json({ success: true, message: "Code OTP transmitted par courrier électronique." });
   } catch (err) {
     console.error('[AUTH REGISTER ERROR]:', err);
     res.status(500).json({ error: "Échec de l'enregistrement." });
