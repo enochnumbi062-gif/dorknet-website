@@ -1,5 +1,5 @@
 /**
- * DorkNet Security - Gestionnaire de persistance hybride sécurisé
+ * DorkNet Security - Gestionnaire de persistance hybride sécurisé (PostgreSQL / JSON local)
  */
 
 const fs = require('fs');
@@ -14,7 +14,7 @@ const DEFAULT_DATA = {
   transactions: [] 
 };
 
-// Charge les données locales au démarrage pour garantir que readDB() renvoie toujours quelque chose de valide
+// Charge les données locales au démarrage pour garantir que readDB() renvoie toujours un objet valide
 function loadInitialLocalData() {
   try {
     if (fs.existsSync(DB_PATH)) {
@@ -29,7 +29,7 @@ function loadInitialLocalData() {
       }
     }
   } catch (e) {
-    console.error("[DB ERROR] Erreur lecture fichier local :", e.message);
+    console.error("[DB ERROR] Erreur lors de la lecture du fichier local :", e.message);
   }
   return JSON.parse(JSON.stringify(DEFAULT_DATA));
 }
@@ -44,13 +44,15 @@ if (DATABASE_URL) {
   try {
     pool = new Pool({
       connectionString: DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
-      connectionTimeoutMillis: 5000 // Évite de bloquer indéfiniment si PG est injoignable
+      ssl: process.env.NODE_ENV === 'production' || DATABASE_URL.includes('render') || DATABASE_URL.includes('supabase')
+        ? { rejectUnauthorized: false }
+        : false,
+      connectionTimeoutMillis: 5000
     });
 
     initPgStore();
   } catch (err) {
-    console.error('[DB PG ERROR] Configuration Pool échouée :', err.message);
+    console.error('[DB PG ERROR] Échec de la configuration du Pool PostgreSQL :', err.message);
   }
 }
 
@@ -70,16 +72,16 @@ async function initPgStore() {
       await pool.query('INSERT INTO dorknet_store (id, data) VALUES (1, $1)', [JSON.stringify(memoryCache)]);
     }
     pgConnected = true;
-    console.log('[OK] Base de données PostgreSQL synchronisée.');
+    console.log('[OK] Base de données PostgreSQL synchronisée avec succès.');
   } catch (err) {
     pgConnected = false;
-    console.error('[DB PG ERROR] Échec initialisation PostgreSQL (utilisation du mode secours local) :', err.message);
+    console.error('[DB PG ERROR] Échec d\'initialisation PostgreSQL (mode secours local actif) :', err.message);
   }
 }
 
 /**
- * Lit les données
- * @returns {Object} Structure de données valide
+ * Lit la structure courante de la base de données
+ * @returns {Object} Structure de données { users, audits, transactions }
  */
 function readDB() {
   return {
@@ -90,7 +92,7 @@ function readDB() {
 }
 
 /**
- * Sauvegarde atomique avec synchronisation PostgreSQL
+ * Sauvegarde atomique avec synchronisation PostgreSQL et fallback local
  * @param {Object} data - Données à enregistrer
  */
 function writeDB(data) {
@@ -100,23 +102,27 @@ function writeDB(data) {
     transactions: Array.isArray(data.transactions) ? data.transactions : []
   };
 
-  // 1. Toujours mettre à jour la mémoire vive immédiatement
+  // 1. Mise à jour immédiate du cache mémoire
   memoryCache = formattedData;
 
-  // 2. Persistance dans PostgreSQL (en arrière-plan si disponible)
+  // 2. Enregistrement asynchrone dans PostgreSQL
   if (pool && pgConnected) {
     pool.query(
       'INSERT INTO dorknet_store (id, data) VALUES (1, $1) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data',
       [JSON.stringify(formattedData)]
-    ).catch(err => console.error('[DB PG WRITE ERROR] :', err.message));
+    ).catch(err => {
+      console.error('[DB PG WRITE ERROR] :', err.message);
+      pgConnected = false; // Marquer la déconnexion pour retenter ultérieurement si nécessaire
+    });
   }
 
-  // 3. Écriture de secours sur le fichier local
+  // 3. Sauvegarde physique de secours dans le fichier JSON local
   const tempPath = `${DB_PATH}.tmp`;
   try {
     fs.writeFileSync(tempPath, JSON.stringify(formattedData, null, 2), 'utf8');
     fs.renameSync(tempPath, DB_PATH);
   } catch (error) {
+    console.error('[DB LOCAL WRITE ERROR] :', error.message);
     if (fs.existsSync(tempPath)) {
       try { fs.unlinkSync(tempPath); } catch (_) {}
     }
