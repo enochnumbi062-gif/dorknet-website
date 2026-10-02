@@ -1,5 +1,5 @@
 /**
- * DorkNet Security - Script Frontend Unifié & Durci (Zero Trust & Matrix Rain)
+ * DorkNet Security - Script Frontend Unifié & Durci (Zero Trust)
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('resize', resizeCanvas);
 
         function drawMatrix() {
-            ctx.fillStyle = "rgba(9, 13, 22, 0.08)";
+            ctx.fillStyle = "rgba(13, 17, 23, 0.08)";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             ctx.font = `${fontSize}px 'JetBrains Mono', monospace`;
@@ -103,9 +103,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const text = chars.charAt(Math.floor(Math.random() * chars.length));
                 
                 if (Math.random() > 0.85) {
-                    ctx.fillStyle = "#22d3ee";
+                    ctx.fillStyle = "#00f2fe";
                 } else {
-                    ctx.fillStyle = "rgba(6, 182, 212, 0.7)";
+                    ctx.fillStyle = "rgba(0, 242, 254, 0.5)";
                 }
 
                 ctx.fillText(text, i * fontSize, drops[i] * fontSize);
@@ -123,16 +123,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 5. PROGRESSION DU CHARGEMENT ---
     const percentElement = document.getElementById('loader-percent');
-    if (percentElement) {
+    const loaderBar = document.getElementById('loader-bar');
+    const loader = document.getElementById('cyber-loader');
+
+    if (percentElement && loaderBar && loader) {
         let progress = 0;
         const interval = setInterval(() => {
-            progress += 1;
+            progress += Math.floor(Math.random() * 8) + 2;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(interval);
+                setTimeout(() => {
+                    loader.style.opacity = '0';
+                    loader.style.visibility = 'hidden';
+                }, 400);
+            }
+            loaderBar.style.width = `${progress}%`;
             percentElement.innerText = `${progress}%`;
-            if (progress >= 100) clearInterval(interval);
-        }, 30);
+        }, 50);
     }
 
-    // --- 6. INSCRIPTION AVEC ENVOI D'OTP ---
+    // --- 6. GESTION DES FORMULAIRES D'AUTHENTIFICATION ---
     const registerForm = document.getElementById('registerForm');
     if (registerForm) {
         registerForm.addEventListener('submit', async (e) => {
@@ -141,14 +152,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const originalBtnText = submitBtn ? submitBtn.innerText : '';
 
             const payload = {
-                nom: registerForm.querySelector('[name="nom"]')?.value || '',
-                email: registerForm.querySelector('[type="email"]')?.value || '',
-                telephone: registerForm.querySelector('[name="telephone"]')?.value || '',
-                password: registerForm.querySelector('[type="password"]')?.value || ''
+                nom: document.getElementById('regName')?.value || '',
+                email: document.getElementById('regEmail')?.value || '',
+                password: document.getElementById('regPassword')?.value || ''
             };
 
-            if (!payload.email || !payload.password) {
-                alert("Veuillez remplir les champs obligatoires (E-mail et Mot de passe).");
+            if (!payload.email || !payload.password || !payload.nom) {
+                alert("Veuillez remplir tous les champs obligatoires.");
                 return;
             }
 
@@ -184,7 +194,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 7. CONNEXION AVEC JWT ---
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
@@ -193,8 +202,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const originalBtnText = submitBtn ? submitBtn.innerText : '';
 
             const payload = {
-                email: loginForm.querySelector('[type="email"]')?.value || '',
-                password: loginForm.querySelector('[type="password"]')?.value || ''
+                email: document.getElementById('loginEmail')?.value || '',
+                password: document.getElementById('loginPassword')?.value || ''
             };
 
             if (!payload.email || !payload.password) {
@@ -237,14 +246,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// --- 8. SÉCURITÉ & SANITIZATION XSS ---
+// --- 7. SÉCURITÉ & SANITIZATION XSS ---
 function sanitizeHTML(str) {
     const temp = document.createElement('div');
     temp.textContent = str;
     return temp.innerHTML;
 }
 
-// --- 9. CLIENT API ET GESTION DES JETONS DE SÉCURITÉ ---
+// --- 8. CLIENT API ET GESTION DES JETONS DE SÉCURITÉ ---
 function getAuthHeaders() {
     const token = localStorage.getItem('token');
     return {
@@ -253,7 +262,7 @@ function getAuthHeaders() {
     };
 }
 
-// --- 10. FONCTIONS GLOBALES POUR LA MODALE D'AUTHENTIFICATION ---
+// --- 9. FONCTIONS GLOBALES POUR LA MODALE D'AUTHENTIFICATION ---
 function openAuthModal(mode) {
     const modal = document.getElementById('authModal');
     if (modal) {
