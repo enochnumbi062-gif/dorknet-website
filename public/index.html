@@ -747,13 +747,13 @@
                 <li><a href="#services">Nos Services</a></li>
                 <li><a href="#projets">Nos Projets</a></li>
                 <li><a href="#formations">Nos Formations</a></li>
-                <li><a href="javascript:void(0)" id="btnOpenAgataNav"><i class="fa-solid fa-brain"></i> Agata-AI</a></li>
+                <li><a href="javascript:void(0)" onclick="openAgataModal()"><i class="fa-solid fa-brain"></i> Agata-AI</a></li>
                 <li><a href="#audit" class="btn-nav">Réserver ton Audit</a></li>
                 <li><a href="#contact">Contact</a></li>
                 
                 <!-- Authentification -->
-                <li><a href="javascript:void(0)" id="btnOpenLoginNav" class="btn-login"><i class="fa-solid fa-right-to-bracket"></i> Connexion</a></li>
-                <li><a href="javascript:void(0)" id="btnOpenRegisterNav" class="btn-register"><i class="fa-solid fa-user-plus"></i> Créer un compte</a></li>
+                <li><a href="javascript:void(0)" onclick="openAuthModal('login')" class="btn-login"><i class="fa-solid fa-right-to-bracket"></i> Connexion</a></li>
+                <li><a href="javascript:void(0)" onclick="openAuthModal('register')" class="btn-register"><i class="fa-solid fa-user-plus"></i> Créer un compte</a></li>
                 
                 <!-- Sélecteur de langue -->
                 <li>
@@ -1005,7 +1005,7 @@
                     <p><i class="fa-brands fa-telegram"></i> @Dorkneet</p>
                 </div>
             </div>
-            <form class="audit-form" id="auditForm">
+            <form class="audit-form" id="auditForm" onsubmit="handleAuditSubmit(event)">
                 <div class="form-group">
                     <input type="text" id="auditName" name="Nom" placeholder="Nom complet ou Nom de l'Entreprise" required>
                 </div>
@@ -1085,20 +1085,20 @@
                 <div class="footer-col">
                     <h4>Ressources</h4>
                     <ul>
-                        <li><a data-info-modal="about">À propos de nous</a></li>
-                        <li><a data-info-modal="redaction">Rédaction</a></li>
-                        <li><a data-info-modal="communaute">Communautés</a></li>
+                        <li><a onclick="openInfoModal('about')">À propos de nous</a></li>
+                        <li><a onclick="openInfoModal('redaction')">Rédaction</a></li>
+                        <li><a onclick="openInfoModal('communaute')">Communautés</a></li>
                     </ul>
                 </div>
                 <!-- Colonne Confidentialité & Mentions Légales -->
                 <div class="footer-col">
                     <h4>Confidentialité et mentions légales</h4>
                     <ul>
-                        <li><a data-info-modal="privacy">Politique de confidentialité</a></li>
-                        <li><a data-info-modal="terms">Conditions d'utilisation</a></li>
-                        <li><a data-info-modal="ai_terms">Conditions d'utilisation de l'IA</a></li>
-                        <li><a data-info-modal="aup">Politique d'utilisation acceptable</a></li>
-                        <li><a data-info-modal="cookies">Politique relative aux cookies</a></li>
+                        <li><a onclick="openInfoModal('privacy')">Politique de confidentialité</a></li>
+                        <li><a onclick="openInfoModal('terms')">Conditions d'utilisation</a></li>
+                        <li><a onclick="openInfoModal('ai_terms')">Conditions d'utilisation de l'IA</a></li>
+                        <li><a onclick="openInfoModal('aup')">Politique d'utilisation acceptable</a></li>
+                        <li><a onclick="openInfoModal('cookies')">Politique relative aux cookies</a></li>
                     </ul>
                 </div>
             </div>
@@ -1123,14 +1123,14 @@
     <!-- ========================================== -->
 
     <!-- Widget Chatbot Flottant -->
-    <div class="chat-widget-btn" id="chatWidgetBtn">
+    <div class="chat-widget-btn" onclick="toggleChatPanel()">
         <i class="fa-solid fa-comments"></i>
     </div>
 
     <div class="chat-panel" id="chatPanel">
         <div class="chat-header">
             <span id="chatHeaderTitle">Messages</span>
-            <i class="fa-solid fa-xmark" style="cursor: pointer;" id="btnCloseChatPanel"></i>
+            <i class="fa-solid fa-xmark" style="cursor: pointer;" onclick="toggleChatPanel()"></i>
         </div>
 
         <!-- Vue 1: Messages -->
@@ -1139,7 +1139,7 @@
                 <i class="fa-regular fa-comment-dots main-icon"></i>
                 <h4>Aucun message</h4>
                 <p>Les messages de l'équipe s'afficheront ici</p>
-                <button class="btn-send-msg" id="btnEnableChatWriting">
+                <button class="btn-send-msg" onclick="enableMessageWriting()">
                     Envoyer un message <i class="fa-solid fa-paper-plane"></i>
                 </button>
             </div>
@@ -1151,8 +1151,8 @@
                     </div>
                 </div>
                 <div class="chat-input-box">
-                    <textarea id="userWidgetInput" placeholder="Écrivez votre message..."></textarea>
-                    <button id="btnSendWidgetMsg"><i class="fa-solid fa-paper-plane"></i></button>
+                    <textarea id="userWidgetInput" placeholder="Écrivez votre message..." onkeypress="handleWidgetKey(event)"></textarea>
+                    <button onclick="sendWidgetMessage()"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
             </div>
         </div>
@@ -1239,9 +1239,9 @@
         </div>
 
         <div class="chat-footer-nav">
-            <div id="navHome" data-widget-tab="home"><i class="fa-solid fa-house"></i>Accueil</div>
-            <div id="navMessages" class="active" data-widget-tab="messages"><i class="fa-solid fa-comment"></i>Messages</div>
-            <div id="navHelp" data-widget-tab="help"><i class="fa-solid fa-circle-question"></i>Aide</div>
+            <div id="navHome" onclick="switchWidgetTab('home')"><i class="fa-solid fa-house"></i>Accueil</div>
+            <div id="navMessages" class="active" onclick="switchWidgetTab('messages')"><i class="fa-solid fa-comment"></i>Messages</div>
+            <div id="navHelp" onclick="switchWidgetTab('help')"><i class="fa-solid fa-circle-question"></i>Aide</div>
         </div>
     </div>
 
@@ -1250,7 +1250,7 @@
         <div class="info-modal-box">
             <div class="info-modal-header">
                 <span id="infoModalTitle">Titre de la section</span>
-                <i class="fa-solid fa-xmark" style="cursor: pointer; color: #fff;" id="btnCloseInfoModal"></i>
+                <i class="fa-solid fa-xmark" style="cursor: pointer; color: #fff;" onclick="closeInfoModal()"></i>
             </div>
             <div class="info-modal-body" id="infoModalBody">
                 <!-- Contenu dynamique -->
@@ -1263,11 +1263,11 @@
         <div class="info-modal-box" style="max-width: 450px;">
             <div class="info-modal-header">
                 <span id="authModalTitle">Créer un compte DorkNet</span>
-                <i class="fa-solid fa-xmark" style="cursor: pointer; color: #fff;" id="btnCloseAuthModal"></i>
+                <i class="fa-solid fa-xmark" style="cursor: pointer; color: #fff;" onclick="closeAuthModal()"></i>
             </div>
             <div class="info-modal-body">
                 <!-- Formulaire d'inscription -->
-                <form id="registerForm" style="display: flex; flex-direction: column; gap: 15px;">
+                <form id="registerForm" onsubmit="handleRegisterSubmit(event)" style="display: flex; flex-direction: column; gap: 15px;">
                     <div class="form-group">
                         <input type="text" id="regName" placeholder="Nom complet" required style="width:100%; padding:10px; background:#161b22; border:1px solid #30363d; color:#fff; border-radius:6px;">
                     </div>
@@ -1278,11 +1278,11 @@
                         <input type="password" id="regPassword" placeholder="Mot de passe" required style="width:100%; padding:10px; background:#161b22; border:1px solid #30363d; color:#fff; border-radius:6px;">
                     </div>
                     <button type="submit" class="btn btn-primary" style="width: 100%;">Créer mon compte</button>
-                    <p style="font-size: 0.85rem; text-align: center; color: #8b949e;">Déjà un compte ? <a href="javascript:void(0)" id="btnSwitchToLogin" style="color:#00f2fe;">Se connecter</a></p>
+                    <p style="font-size: 0.85rem; text-align: center; color: #8b949e;">Déjà un compte ? <a href="javascript:void(0)" onclick="switchAuthTab('login')" style="color:#00f2fe;">Se connecter</a></p>
                 </form>
 
                 <!-- Formulaire de connexion -->
-                <form id="loginForm" style="display: none; flex-direction: column; gap: 15px;">
+                <form id="loginForm" onsubmit="handleLoginSubmit(event)" style="display: none; flex-direction: column; gap: 15px;">
                     <div class="form-group">
                         <input type="email" id="loginEmail" placeholder="Adresse Email" required style="width:100%; padding:10px; background:#161b22; border:1px solid #30363d; color:#fff; border-radius:6px;">
                     </div>
@@ -1290,7 +1290,7 @@
                         <input type="password" id="loginPassword" placeholder="Mot de passe" required style="width:100%; padding:10px; background:#161b22; border:1px solid #30363d; color:#fff; border-radius:6px;">
                     </div>
                     <button type="submit" class="btn btn-primary" style="width: 100%;">Se connecter</button>
-                    <p style="font-size: 0.85rem; text-align: center; color: #8b949e;">Pas encore de compte ? <a href="javascript:void(0)" id="btnSwitchToRegister" style="color:#00f2fe;">Créer un compte</a></p>
+                    <p style="font-size: 0.85rem; text-align: center; color: #8b949e;">Pas encore de compte ? <a href="javascript:void(0)" onclick="switchAuthTab('register')" style="color:#00f2fe;">Créer un compte</a></p>
                 </form>
             </div>
         </div>
@@ -1301,21 +1301,21 @@
         <div class="agata-box">
             <div class="agata-header">
                 <span><i class="fa-solid fa-brain"></i> Assistant Agata-AI </span>
-                <i class="fa-solid fa-xmark" style="cursor: pointer; color: #fff;" id="btnCloseAgataModal"></i>
+                <i class="fa-solid fa-xmark" style="cursor: pointer; color: #fff;" onclick="closeAgataModal()"></i>
             </div>
             <div class="agata-logs" id="agataLogs">
                 <p style="color: #00f2fe;">[AGATA initialized]</p>
                 <p>Bonjour ! Je suis <strong>Agata-AI</strong>. Posez-moi vos questions sur le pentesting, les tests de performance, le réseau ou l'informatique en général.</p>
             </div>
             <div class="agata-input-area">
-                <input type="text" id="agataInput" placeholder="Posez une question à Agata-AI...">
-                <button id="btnSendAgata">Envoyer</button>
+                <input type="text" id="agataInput" placeholder="Posez une question à Agata-AI..." onkeypress="handleAgataKey(event)">
+                <button onclick="sendAgataQuery()">Envoyer</button>
             </div>
         </div>
     </div>
 
     <!-- ========================================== -->
-    <!-- 13. SCRIPTS EXCEPTIONNELS & EXTERNES       -->
+    <!-- 13. SCRIPTS ET LOGIQUE JAVASCRIPT          -->
     <!-- ========================================== -->
 
     <!-- Integration Google Translate API -->
@@ -1326,8 +1326,426 @@
     </script>
     <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async defer></script>
 
-    <!-- Fichier script externe centralisé -->
+    <!-- Fichier script externe -->
     <script src="script.js"></script>
 
+    <!-- Scripts internes du site -->
+    <script>
+        // Matrix Rain & Loader Controller
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*';
+        const fontSize = 14;
+        const columns = Math.floor(canvas.width / fontSize);
+        const drops = Array(columns).fill(1);
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(13, 17, 23, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#00f2fe';
+            ctx.font = fontSize + 'px monospace';
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = characters.charAt(Math.floor(Math.random() * characters.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+        const matrixInterval = setInterval(drawMatrix, 33);
+
+        // Progression de la barre de chargement
+        let progress = 0;
+        const loaderBar = document.getElementById('loader-bar');
+        const loaderPercent = document.getElementById('loader-percent');
+        const loader = document.getElementById('cyber-loader');
+
+        const progressInterval = setInterval(() => {
+            progress += Math.floor(Math.random() * 8) + 2;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(progressInterval);
+                setTimeout(() => {
+                    loader.style.opacity = '0';
+                    loader.style.visibility = 'hidden';
+                    clearInterval(matrixInterval);
+                }, 400);
+            }
+            loaderBar.style.width = progress + '%';
+            loaderPercent.innerText = progress + '%';
+        }, 50);
+
+        // Synchronisation du sélecteur de langue avec Google Translate
+        const langSelectElem = document.getElementById('lang-select');
+        if (langSelectElem) {
+            langSelectElem.addEventListener('change', function() {
+                var lang = this.value;
+                var gtCombo = document.querySelector('.goog-te-combo');
+                if (gtCombo) {
+                    gtCombo.value = lang;
+                    gtCombo.dispatchEvent(new Event('change'));
+                }
+            });
+        }
+
+        // Fermeture automatique des modales en cliquant sur l'arrière-plan
+        window.onclick = function(event) {
+            const infoModal = document.getElementById('infoModal');
+            const authModal = document.getElementById('authModal');
+            const agataModal = document.getElementById('agataModal');
+            if (event.target === infoModal) closeInfoModal();
+            if (event.target === authModal) closeAuthModal();
+            if (event.target === agataModal) closeAgataModal();
+        };
+
+        // Gestion de l'affichage du Chatbot
+        function toggleChatPanel() {
+            const panel = document.getElementById('chatPanel');
+            panel.style.display = (panel.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        // Navigation entre onglets du Widget Chatbot
+        function switchWidgetTab(tabName) {
+            document.querySelectorAll('.chat-view').forEach(view => view.classList.remove('active'));
+            document.querySelectorAll('.chat-footer-nav div').forEach(nav => nav.classList.remove('active'));
+
+            const title = document.getElementById('chatHeaderTitle');
+
+            if (tabName === 'home') {
+                document.getElementById('viewHome').classList.add('active');
+                document.getElementById('navHome').classList.add('active');
+                title.innerText = "Accueil & Équipe";
+            } else if (tabName === 'messages') {
+                document.getElementById('viewMessages').classList.add('active');
+                document.getElementById('navMessages').classList.add('active');
+                title.innerText = "Messages";
+            } else if (tabName === 'help') {
+                document.getElementById('viewHelp').classList.add('active');
+                document.getElementById('navHelp').classList.add('active');
+                title.innerText = "Aide & Documentation Agata-AI";
+            }
+        }
+
+        function enableMessageWriting() {
+            document.getElementById('chatDefaultState').style.display = 'none';
+            document.getElementById('chatActiveState').style.display = 'flex';
+        }
+
+        function sendWidgetMessage() {
+            const input = document.getElementById('userWidgetInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const box = document.getElementById('chatHistoryBox');
+            
+            const userMsg = document.createElement('div');
+            userMsg.className = 'chat-msg-item user';
+            userMsg.innerHTML = `<strong>Vous :</strong> ${text}`;
+            box.appendChild(userMsg);
+
+            input.value = '';
+            box.scrollTop = box.scrollHeight;
+
+            setTimeout(() => {
+                const teamMsg = document.createElement('div');
+                teamMsg.className = 'chat-msg-item team';
+                teamMsg.innerHTML = `<strong>Équipe DorkNet :</strong> Merci pour votre message. Un membre de l'équipe vous répondra dans un bref délai.`;
+                box.appendChild(teamMsg);
+                box.scrollTop = box.scrollHeight;
+            }, 1000);
+        }
+
+        function handleWidgetKey(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendWidgetMessage();
+            }
+        }
+
+        // Modales d'Authentification
+        function openAuthModal(mode) {
+            document.getElementById('authModal').style.display = 'flex';
+            switchAuthTab(mode);
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').style.display = 'none';
+        }
+
+        function switchAuthTab(mode) {
+            const regForm = document.getElementById('registerForm');
+            const loginForm = document.getElementById('loginForm');
+            const title = document.getElementById('authModalTitle');
+
+            if (mode === 'register') {
+                regForm.style.display = 'flex';
+                loginForm.style.display = 'none';
+                title.innerText = "Créer un compte DorkNet";
+            } else {
+                regForm.style.display = 'none';
+                loginForm.style.display = 'flex';
+                title.innerText = "Connexion DorkNet";
+            }
+        }
+
+        async function handleRegisterSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+
+            try {
+                const res = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Compte créé avec succès ! Veuillez vous connecter.');
+                    switchAuthTab('login');
+                } else {
+                    alert('Erreur lors de l\'inscription : ' + (data.error || 'Erreur réseau'));
+                }
+            } catch (err) {
+                alert('Erreur serveur lors de l\'inscription.');
+            }
+        }
+
+        async function handleLoginSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (data.success && data.token) {
+                    localStorage.setItem('token', data.token);
+                    alert('Connexion réussie !');
+                    closeAuthModal();
+                } else {
+                    alert('Erreur de connexion : ' + (data.error || 'Identifiants invalides'));
+                }
+            } catch (err) {
+                alert('Erreur serveur lors de la connexion.');
+            }
+        }
+
+        async function handleAuditSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('auditName').value;
+            const email = document.getElementById('auditEmail').value;
+            const service = document.getElementById('auditService').value;
+            const message = document.getElementById('auditMessage').value;
+
+            try {
+                const res = await fetch('/api/audit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, service, message })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Votre demande d\'audit a été envoyée avec succès.');
+                    document.getElementById('auditForm').reset();
+                } else {
+                    alert('Erreur lors de l\'envoi : ' + (data.error || 'Échec de transmission'));
+                }
+            } catch (err) {
+                alert('Erreur réseau lors de la demande d\'audit.');
+            }
+        }
+
+        // Agata-AI
+        function openAgataModal() {
+            document.getElementById('agataModal').style.display = 'flex';
+        }
+
+        function closeAgataModal() {
+            document.getElementById('agataModal').style.display = 'none';
+        }
+
+        async function sendAgataQuery() {
+            const input = document.getElementById('agataInput');
+            const logs = document.getElementById('agataLogs');
+            const query = input.value.trim();
+
+            if (!query) return;
+
+            const userMsg = document.createElement('p');
+            userMsg.style.color = '#fff';
+            userMsg.innerHTML = `<strong>Vous :</strong> ${query}`;
+            logs.appendChild(userMsg);
+
+            input.value = '';
+            logs.scrollTop = logs.scrollHeight;
+
+            const searchingMsg = document.createElement('p');
+            searchingMsg.style.color = '#8b949e';
+            searchingMsg.style.fontStyle = 'italic';
+            searchingMsg.id = 'tempSearch';
+            searchingMsg.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Agata-AI analyse et génère la réponse...`;
+            logs.appendChild(searchingMsg);
+            logs.scrollTop = logs.scrollHeight;
+
+            const token = localStorage.getItem('token');
+
+            try {
+                let replyText = "";
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const res = await fetch('/api/agata/chat', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({ message: query })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    replyText = data.response;
+                } else {
+                    throw new Error(data.error || "Erreur de réponse backend");
+                }
+
+                const tempMsg = document.getElementById('tempSearch');
+                if (tempMsg) tempMsg.remove();
+
+                const aiMsg = document.createElement('p');
+                aiMsg.style.color = '#10b981';
+                aiMsg.innerHTML = `<strong>Agata-AI :</strong> ${replyText}`;
+                logs.appendChild(aiMsg);
+                logs.scrollTop = logs.scrollHeight;
+
+            } catch (error) {
+                const tempMsg = document.getElementById('tempSearch');
+                if (tempMsg) tempMsg.remove();
+
+                const errorMsg = document.createElement('p');
+                errorMsg.style.color = '#ef4444';
+                errorMsg.innerHTML = `<strong>Agata-AI (Erreur) :</strong> ${error.message}`;
+                logs.appendChild(errorMsg);
+                logs.scrollTop = logs.scrollHeight;
+            }
+        }
+
+        function handleAgataKey(e) {
+            if (e.key === 'Enter') {
+                sendAgataQuery();
+            }
+        }
+
+        // Modales Footer
+        const modalContent = {
+            about: {
+                title: "À propos de DorkNet",
+                html: `
+                    <h3>Présentation Générale</h3>
+                    <p>DorkNet est une plateforme spécialisée en cybersécurité avancée, ingénierie d'audit, hacking éthique et défense des infrastructures numériques. Elle combine formation pratique, outils d'investigation et un écosystème logiciel haute performance (suite AGATA).</p>
+                    <h3>Notre Vision & L'Idée</h3>
+                    <p>Face à la recrundescence et à la complexité des cyberattaques, DorkNet est né d'une idée centrale : démocratiser la cybersécurité défensive et offensive tout en fournissant des solutions d'audit concrètes, automatisées et souveraines.</p>
+                    <h3>Le Besoin auquel répond DorkNet</h3>
+                    <ul>
+                        <li><strong>Pénurie d'expertise :</strong> Combler le manque de compétences techniques via des cursus axés sur la pratique directe.</li>
+                        <li><strong>Vulnérabilité des infrastructures :</strong> Permettre aux entreprises de tester la résilience de leurs systèmes avant toute exploitation malveillante.</li>
+                        <li><strong>Complexité des outils :</strong> Centraliser l'orchestration de la sécurité et le monitoring en temps réel via l'écosystème AGATA.</li>
+                    </ul>
+                    <h3>Les Avantages de DorkNet</h3>
+                    <ul>
+                        <li><strong>Écosystème Intégré :</strong> Alignement direct entre audit, monitoring, forensic et chiffrement post-quantique.</li>
+                        <li><strong>Formations Orientées Pratique :</strong> Parcours adaptés (Débutant, Avancé, Senior) accompagnés de labs dédiés.</li>
+                        <li><strong>Accompagnement Premium :</strong> Support technique 24/7 et rapports d'audit détaillés pour les entreprises.</li>
+                    </ul>
+                `
+            },
+            redaction: {
+                title: "Section Rédaction & Publications",
+                html: `
+                    <p>Espace dédié aux publications techniques, analyses de vulnérabilités (CVE), bulletins de sécurité et guides de durcissement rédigés par l'équipe d'experts DorkNet.</p>
+                    <h3>Derniers Sujets Couverts</h3>
+                    <ul>
+                        <li>Analyse des failles Zero-Day et vecteurs d'attaque modernes.</li>
+                        <li>Mise en œuvre du chiffrement post-quantique dans les passerelles API.</li>
+                        <li>Méthodologies d'investigation forensique (DFIR) avec Agata-Investigation.</li>
+                    </ul>
+                `
+            },
+            communaute: {
+                title: "Communautés DorkNet",
+                html: `
+                    <p>Espace d'échange réunissant plus de 8,6 millions d'apprenants et de passionnés de cybersécurité à travers le monde.</p>
+                    <p>Rejoignez nos canaux pour poser des questions, partager vos connaissances et collaborer sur des exercices pratiques de Pentesting et de développement sécurisé.</p>
+                `
+            },
+            privacy: {
+                title: "Politique de confidentialité",
+                html: `
+                    <p>Chez DorkNet, la protection de vos données personnelles est une priorité absolue. Nous collectons uniquement les informations strictly nécessaires à la fourniture de nos services et formations.</p>
+                    <p>Vos informations ne sont jamais vendues ou transmises à des tiers. Les audits et analyses réalisés sur vos infrastructures restent sous le sceau d'une confidentialité stricte.</p>
+                `
+            },
+            terms: {
+                title: "Conditions d'utilisation",
+                html: `
+                    <p>En naviguant sur notre plateforme et en utilisant nos services, vous acceptez l'intégralité de nos conditions d'utilisation.</p>
+                    <p>Toutes les ressources pédagogiques, codes source et documentations fournis sur DorkNet sont protégés par le droit d'auteur. Toute reproduction non autorisée est strictly interdite.</p>
+                `
+            },
+            ai_terms: {
+                title: "Conditions d'utilisation de l'IA (Agata-AI)",
+                html: `
+                    <p>L'assistant <strong>Agata-AI</strong> est conçu exclusivement à des fins d'assistance technique, d'apprentissage et de guidage lors des tests de performance et d'audit.</p>
+                    <p>L'utilisation de cet assistant pour générer du code malveillant ou planifier des attaques cyber non autorisées sur des systèmes tiers est strictly prohibée.</p>
+                `
+            },
+            aup: {
+                title: "Politique d'utilisation acceptable",
+                html: `
+                    <p>Cette charte éthique régit l'usage de nos outils, logiciels et techniques dispensés au sein de nos formations.</p>
+                    <ul>
+                        <li>Interdiction formelle de mener des intrusions non autorisées ou des attaques par déni de service (DDoS).</li>
+                        <li>L'ensemble des compétences acquises doit être appliqué dans le respect des cadres légaux du hacking éthique.</li>
+                    </ul>
+                `
+            },
+            cookies: {
+                title: "Politique relative aux cookies",
+                html: `
+                    <p>Nous utilisons des cookies strictly techniques pour garantir le bon fonctionnement de notre site, la gestion de votre session et la persistance de vos préférences de langue.</p>
+                    <p>Aucun cookie d'analyse comportementale tierce ou d'affichage publicitaire n'est déposé sur votre équipement.</p>
+                `
+            }
+        };
+
+        function openInfoModal(key) {
+            const data = modalContent[key];
+            if (!data) return;
+            document.getElementById('infoModalTitle').innerText = data.title;
+            document.getElementById('infoModalBody').innerHTML = data.html;
+            document.getElementById('infoModal').style.display = 'flex';
+        }
+
+        function closeInfoModal() {
+            document.getElementById('infoModal').style.display = 'none';
+        }
+    </script>
 </body>
 </html>
