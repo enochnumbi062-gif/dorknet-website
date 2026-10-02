@@ -2,12 +2,13 @@
   "name": "dorknet-backend",
   "version": "1.1.0",
   "description": "API Backend, Authentification et Génération de PDF pour la plateforme DorkNet Security",
-  "main": "server.js",
+  "main": "src/server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
@@ -15,7 +16,8 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^6.9.13",
-    "pdfkit": "^0.15.0"
+    "pdfkit": "^0.15.0",
+    "pg": "^8.11.5"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"
