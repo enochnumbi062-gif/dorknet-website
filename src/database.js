@@ -1,30 +1,28 @@
 'use strict';
 
 /**
- * DorkNet Security
- * Hybrid Persistence Engine
+ * ============================================================
+ * DORKNET SECURITY — HYBRID PERSISTENCE ENGINE
+ * Enterprise Security Data Access Layer / AGATA-AI
+ * ============================================================
  *
  * Architecture:
- *   Application
+ *   Application Layer
  *       │
- *       ├── Memory Cache
+ *       ├── In-Memory Thread-Safe Cache
  *       │
- *       ├── PostgreSQL JSONB Store
+ *       ├── PostgreSQL JSONB Store (Primary)
  *       │
- *       └── Atomic Local JSON Fallback
+ *       └── Atomic Local JSON File (Disaster Recovery Fallback)
  *
- * Compatibility:
- *   const { readDB, writeDB } = require('./database');
- *
- * Design goals:
- *   - PostgreSQL primary persistence
- *   - Local JSON disaster fallback
- *   - Atomic local writes
- *   - In-process write serialization
- *   - PostgreSQL reconnect strategy
- *   - Data structure validation
- *   - Safe shutdown
- *   - Health/status inspection
+ * Features:
+ *   - Automatic PostgreSQL schema bootstrap
+ *   - Seamless fallback to atomic local JSON storage
+ *   - In-process write queue serialization
+ *   - Exponential / scheduled reconnect strategy
+ *   - Automated backup rotation with mode permissions (0o640)
+ *   - Health metrics & status inspection
+ * ============================================================
  */
 
 const fs = require('fs');
@@ -33,7 +31,7 @@ const crypto = require('crypto');
 const { Pool } = require('pg');
 
 // ============================================================
-// CONFIGURATION
+// CONFIGURATION & ENVIRONMENT
 // ============================================================
 
 const APP_NAME = 'DorkNet Security';
@@ -71,35 +69,17 @@ const MAX_BACKUPS =
   Number.parseInt(process.env.DB_MAX_BACKUPS || '10', 10);
 
 // ============================================================
-// DEFAULT DATA MODEL
-// ============================================================
-
-const DEFAULT_DATA = Object.freeze({
-  users: [],
-  audits: [],
-  transactions: []
-});
-
-// ============================================================
 // INTERNAL STATE
 // ============================================================
 
 let memoryCache = null;
-
 let pool = null;
-
 let pgConnected = false;
-
 let pgInitializing = false;
-
 let reconnectTimer = null;
-
 let writeQueue = Promise.resolve();
-
 let lastDatabaseError = null;
-
 let lastSuccessfulWrite = null;
-
 let initializedAt = null;
 
 // ============================================================
@@ -132,9 +112,7 @@ function normalizeData(data) {
   return {
     users: Array.isArray(data.users) ? data.users : [],
     audits: Array.isArray(data.audits) ? data.audits : [],
-    transactions: Array.isArray(data.transactions)
-      ? data.transactions
-      : []
+    transactions: Array.isArray(data.transactions) ? data.transactions : []
   };
 }
 
@@ -147,39 +125,8 @@ function getFileSize(filePath) {
 }
 
 // ============================================================
-// LOCAL STORE
+// LOCAL STORAGE MANAGEMENT
 // ============================================================
-
-function loadInitialLocalData() {
-  try {
-    if (!fs.existsSync(DB_PATH)) {
-      return cloneDefaultData();
-    }
-
-    const raw = fs.readFileSync(DB_PATH, 'utf8');
-
-    if (!raw.trim()) {
-      console.warn(
-        `[DB LOCAL] ${DB_PATH} est vide. Initialisation avec une base vierge.`
-      );
-
-      return cloneDefaultData();
-    }
-
-    const parsed = JSON.parse(raw);
-
-    return normalizeData(parsed);
-
-  } catch (error) {
-
-    console.error(
-      '[DB LOCAL ERROR] Impossible de charger db.json :',
-      error.message
-    );
-
-    return cloneDefaultData();
-  }
-}
 
 function ensureLocalDirectories() {
   try {
@@ -198,285 +145,189 @@ function ensureLocalDirectories() {
         mode: 0o750
       });
     }
-
   } catch (error) {
-
     console.error(
-      '[DB LOCAL ERROR] Impossible de préparer les répertoires :',
+      '[DB LOCAL ERROR] Preparation des repertoires impossible :',
       error.message
     );
-
     throw error;
   }
 }
 
+function loadInitialLocalData() {
+  try {
+    if (!fs.existsSync(DB_PATH)) {
+      return cloneDefaultData();
+    }
+
+    const raw = fs.readFileSync(DB_PATH, 'utf8');
+
+    if (!raw.trim()) {
+      console.warn(
+        `[DB LOCAL] ${DB_PATH} est vide. Initialisation avec une base vierge.`
+      );
+      return cloneDefaultData();
+    }
+
+    const parsed = JSON.parse(raw);
+    return normalizeData(parsed);
+  } catch (error) {
+    console.error(
+      '[DB LOCAL ERROR] Impossible de charger db.json :',
+      error.message
+    );
+    return cloneDefaultData();
+  }
+}
+
 // ============================================================
-// ATOMIC LOCAL WRITE
+// ATOMIC LOCAL WRITE & BACKUP
 // ============================================================
+
+function createLocalBackup(serialized) {
+  if (!ENABLE_LOCAL_BACKUP) return;
+
+  try {
+    ensureLocalDirectories();
+    const backupId = generateBackupId();
+    const backupPath = path.join(BACKUP_DIR, `db-${backupId}.json`);
+
+    fs.writeFileSync(backupPath, serialized, {
+      encoding: 'utf8',
+      mode: 0o640
+    });
+
+    rotateBackups();
+  } catch (error) {
+    console.warn('[DB BACKUP WARNING]:', error.message);
+  }
+}
+
+function rotateBackups() {
+  if (!ENABLE_LOCAL_BACKUP) return;
+
+  try {
+    if (!fs.existsSync(BACKUP_DIR)) return;
+
+    const files = fs
+      .readdirSync(BACKUP_DIR)
+      .filter((file) => file.startsWith('db-'))
+      .map((file) => {
+        const fullPath = path.join(BACKUP_DIR, file);
+        try {
+          return {
+            file,
+            fullPath,
+            mtime: fs.statSync(fullPath).mtimeMs
+          };
+        } catch (_) {
+          return null;
+        }
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.mtime - a.mtime);
+
+    const obsolete = files.slice(MAX_BACKUPS);
+    for (const item of obsolete) {
+      try {
+        fs.unlinkSync(item.fullPath);
+      } catch (_) {}
+    }
+  } catch (error) {
+    console.warn('[DB BACKUP ROTATION WARNING]:', error.message);
+  }
+}
 
 function writeLocalAtomically(data) {
-
   ensureLocalDirectories();
 
   const formattedData = normalizeData(data);
-
-  const tempPath =
-    `${DB_PATH}.${process.pid}.${Date.now()}.tmp`;
-
-  const serialized =
-    JSON.stringify(formattedData, null, 2);
+  const tempPath = `${DB_PATH}.${process.pid}.${Date.now()}.tmp`;
+  const serialized = JSON.stringify(formattedData, null, 2);
 
   try {
-
-    /*
-     * Écriture dans un fichier temporaire.
-     */
-    const fd = fs.openSync(
-      tempPath,
-      'w',
-      0o640
-    );
+    const fd = fs.openSync(tempPath, 'w', 0o640);
 
     try {
-
-      fs.writeFileSync(
-        fd,
-        serialized,
-        'utf8'
-      );
-
-      /*
-       * Force l'écriture physique avant rename.
-       */
+      fs.writeFileSync(fd, serialized, 'utf8');
       try {
         fs.fsyncSync(fd);
       } catch (_) {
-        // Certains FS / environnements ne supportent pas fsync.
+        // Ignoré si le système de fichiers ne supporte pas fsync
       }
-
     } finally {
-
       fs.closeSync(fd);
     }
 
-    /*
-     * Remplacement atomique.
-     */
-    fs.renameSync(
-      tempPath,
-      DB_PATH
-    );
+    fs.renameSync(tempPath, DB_PATH);
 
-    /*
-     * Backup optionnel après écriture réussie.
-     */
     if (ENABLE_LOCAL_BACKUP) {
       createLocalBackup(serialized);
     }
 
     return true;
-
   } catch (error) {
-
-    console.error(
-      '[DB LOCAL WRITE ERROR]:',
-      error.message
-    );
-
+    console.error('[DB LOCAL WRITE ERROR]:', error.message);
     try {
       if (fs.existsSync(tempPath)) {
         fs.unlinkSync(tempPath);
       }
     } catch (_) {}
-
     return false;
   }
 }
 
 // ============================================================
-// LOCAL BACKUP ROTATION
-// ============================================================
-
-function createLocalBackup(serialized) {
-
-  if (!ENABLE_LOCAL_BACKUP) {
-    return;
-  }
-
-  try {
-
-    ensureLocalDirectories();
-
-    const backupId = generateBackupId();
-
-    const backupPath =
-      path.join(
-        BACKUP_DIR,
-        `db-${backupId}.json`
-      );
-
-    fs.writeFileSync(
-      backupPath,
-      serialized,
-      {
-        encoding: 'utf8',
-        mode: 0o640
-      }
-    );
-
-    rotateBackups();
-
-  } catch (error) {
-
-    console.warn(
-      '[DB BACKUP WARNING]:',
-      error.message
-    );
-  }
-}
-
-function rotateBackups() {
-
-  if (!ENABLE_LOCAL_BACKUP) {
-    return;
-  }
-
-  try {
-
-    if (!fs.existsSync(BACKUP_DIR)) {
-      return;
-    }
-
-    const files = fs.readdirSync(BACKUP_DIR)
-      .filter(file => file.startsWith('db-'))
-      .map(file => {
-
-        const fullPath =
-          path.join(BACKUP_DIR, file);
-
-        let stat;
-
-        try {
-          stat = fs.statSync(fullPath);
-        } catch (_) {
-          return null;
-        }
-
-        return {
-          file,
-          fullPath,
-          mtime: stat.mtimeMs
-        };
-      })
-      .filter(Boolean)
-      .sort((a, b) => b.mtime - a.mtime);
-
-    const obsolete =
-      files.slice(MAX_BACKUPS);
-
-    for (const item of obsolete) {
-
-      try {
-        fs.unlinkSync(item.fullPath);
-      } catch (_) {}
-    }
-
-  } catch (error) {
-
-    console.warn(
-      '[DB BACKUP ROTATION WARNING]:',
-      error.message
-    );
-  }
-}
-
-// ============================================================
-// INITIAL MEMORY CACHE
+// INITIAL CACHE LOAD
 // ============================================================
 
 memoryCache = loadInitialLocalData();
-
 initializedAt = new Date().toISOString();
 
 // ============================================================
-// POSTGRESQL
+// POSTGRESQL ENGINE
 // ============================================================
 
 function createPostgresPool() {
-
   if (!DATABASE_URL) {
     console.warn(
-      '[DB PG] DATABASE_URL non configurée. Mode local uniquement.'
+      '[DB PG] DATABASE_URL non configuree. Mode local uniquement.'
     );
-
     return null;
   }
 
-  /*
-   * En production, on évite volontairement
-   * rejectUnauthorized:false.
-   *
-   * Pour Render/Supabase/etc., configure correctement
-   * le certificat CA si nécessaire via PGSSLROOTCERT.
-   */
-
-  const sslEnabled =
-    process.env.PGSSL === 'true' ||
-    IS_PRODUCTION;
-
+  const sslEnabled = process.env.PGSSL === 'true' || IS_PRODUCTION;
   const sslConfig = sslEnabled
     ? {
-        rejectUnauthorized:
-          process.env.PGSSL_REJECT_UNAUTHORIZED !== 'false'
+        rejectUnauthorized: process.env.PGSSL_REJECT_UNAUTHORIZED !== 'false'
       }
     : false;
 
   const newPool = new Pool({
     connectionString: DATABASE_URL,
-
     max: PG_MAX_CONNECTIONS,
-
-    idleTimeoutMillis:
-      PG_IDLE_TIMEOUT,
-
-    connectionTimeoutMillis:
-      PG_CONNECTION_TIMEOUT,
-
+    idleTimeoutMillis: PG_IDLE_TIMEOUT,
+    connectionTimeoutMillis: PG_CONNECTION_TIMEOUT,
     ssl: sslConfig,
-
-    application_name:
-      process.env.PG_APPLICATION_NAME ||
-      APP_NAME,
-
+    application_name: process.env.PG_APPLICATION_NAME || APP_NAME,
     keepAlive: true
   });
 
   newPool.on('error', (error) => {
-
     pgConnected = false;
-
     lastDatabaseError = {
       message: error.message,
       timestamp: new Date().toISOString()
     };
 
-    console.error(
-      '[DB PG POOL ERROR]:',
-      error.message
-    );
-
+    console.error('[DB PG POOL ERROR]:', error.message);
     schedulePgReconnect();
   });
 
   return newPool;
 }
 
-// ============================================================
-// POSTGRESQL INITIALIZATION
-// ============================================================
-
 async function initPgStore() {
-
   if (!pool || pgInitializing) {
     return false;
   }
@@ -484,7 +335,6 @@ async function initPgStore() {
   pgInitializing = true;
 
   try {
-
     await pool.query(`
       CREATE TABLE IF NOT EXISTS dorknet_store (
         id INTEGER PRIMARY KEY,
@@ -495,60 +345,33 @@ async function initPgStore() {
     `);
 
     const result = await pool.query(`
-      SELECT
-        data,
-        version,
-        updated_at
+      SELECT data, version, updated_at
       FROM dorknet_store
       WHERE id = 1
       LIMIT 1;
     `);
 
     if (result.rows.length === 0) {
-
       await pool.query(
         `
-        INSERT INTO dorknet_store
-          (id, data, version, updated_at)
-        VALUES
-          (1, $1::jsonb, 1, NOW())
-        ON CONFLICT (id)
-        DO NOTHING;
+        INSERT INTO dorknet_store (id, data, version, updated_at)
+        VALUES (1, $1::jsonb, 1, NOW())
+        ON CONFLICT (id) DO NOTHING;
         `,
         [JSON.stringify(memoryCache)]
       );
-
     } else {
-
-      const remoteData =
-        normalizeData(result.rows[0].data);
-
-      /*
-       * PostgreSQL devient la source persistante
-       * lorsqu'il contient déjà des données.
-       */
-      memoryCache = remoteData;
+      memoryCache = normalizeData(result.rows[0].data);
     }
 
-    /*
-     * Vérification réelle de la connexion.
-     */
     await pool.query('SELECT 1');
-
     pgConnected = true;
-
     lastDatabaseError = null;
 
-    console.log(
-      '[OK] PostgreSQL connecté et DorkNet Store initialisé.'
-    );
-
+    console.log('[OK] PostgreSQL connecte et DorkNet Store initialise.');
     return true;
-
   } catch (error) {
-
     pgConnected = false;
-
     lastDatabaseError = {
       message: error.message,
       timestamp: new Date().toISOString()
@@ -558,37 +381,22 @@ async function initPgStore() {
       '[DB PG INIT ERROR] Mode local de secours actif :',
       error.message
     );
-
     schedulePgReconnect();
-
     return false;
-
   } finally {
-
     pgInitializing = false;
   }
 }
 
-// ============================================================
-// POSTGRESQL RECONNECT
-// ============================================================
-
 function schedulePgReconnect() {
-
   if (!pool || pgConnected || reconnectTimer) {
     return;
   }
 
   reconnectTimer = setTimeout(async () => {
-
     reconnectTimer = null;
-
-    if (pgConnected) {
-      return;
-    }
-
+    if (pgConnected) return;
     await initPgStore();
-
   }, PG_RETRY_DELAY);
 
   if (typeof reconnectTimer.unref === 'function') {
@@ -596,79 +404,38 @@ function schedulePgReconnect() {
   }
 }
 
-// ============================================================
-// INITIALIZE POSTGRES
-// ============================================================
-
 if (DATABASE_URL) {
-
   try {
-
     pool = createPostgresPool();
-
-    /*
-     * Ne bloque pas le démarrage du serveur HTTP.
-     */
     initPgStore().catch((error) => {
-
-      console.error(
-        '[DB PG FATAL INIT HANDLER]:',
-        error.message
-      );
-
+      console.error('[DB PG FATAL INIT HANDLER]:', error.message);
       schedulePgReconnect();
     });
-
   } catch (error) {
-
-    console.error(
-      '[DB PG CONFIG ERROR]:',
-      error.message
-    );
-
+    console.error('[DB PG CONFIG ERROR]:', error.message);
     pool = null;
     pgConnected = false;
   }
 }
 
 // ============================================================
-// READ DATABASE
+// READ & WRITE PUBLIC API
 // ============================================================
 
 function readDB() {
-
-  /*
-   * Retourne toujours une copie afin d'éviter
-   * qu'un appel externe modifie directement le cache.
-   */
-  return cloneData(
-    normalizeData(memoryCache)
-  );
+  return cloneData(normalizeData(memoryCache));
 }
 
-// ============================================================
-// POSTGRES PERSISTENCE
-// ============================================================
-
 async function persistPostgres(data) {
-
   if (!pool || !pgConnected) {
     return false;
   }
 
   try {
-
     await pool.query(
       `
-      INSERT INTO dorknet_store
-        (id, data, version, updated_at)
-      VALUES
-        (
-          1,
-          $1::jsonb,
-          1,
-          NOW()
-        )
+      INSERT INTO dorknet_store (id, data, version, updated_at)
+      VALUES (1, $1::jsonb, 1, NOW())
       ON CONFLICT (id)
       DO UPDATE SET
         data = EXCLUDED.data,
@@ -678,171 +445,83 @@ async function persistPostgres(data) {
       [JSON.stringify(data)]
     );
 
-    lastSuccessfulWrite =
-      new Date().toISOString();
-
+    lastSuccessfulWrite = new Date().toISOString();
     return true;
-
   } catch (error) {
-
     pgConnected = false;
-
     lastDatabaseError = {
       message: error.message,
       timestamp: new Date().toISOString()
     };
 
-    console.error(
-      '[DB PG WRITE ERROR]:',
-      error.message
-    );
-
+    console.error('[DB PG WRITE ERROR]:', error.message);
     schedulePgReconnect();
-
     return false;
   }
 }
 
-// ============================================================
-// WRITE DATABASE
-// ============================================================
-
 function writeDB(data) {
+  const formattedData = normalizeData(data);
 
-  const formattedData =
-    normalizeData(data);
+  // Synchronisation immédiate en mémoire
+  memoryCache = cloneData(formattedData);
 
-  /*
-   * Mise à jour mémoire immédiate.
-   */
-  memoryCache =
-    cloneData(formattedData);
+  // Enfilement asynchrone des écritures physiques
+  writeQueue = writeQueue
+    .then(async () => {
+      const localSuccess = writeLocalAtomically(formattedData);
+      if (!localSuccess) {
+        console.error('[DB CRITICAL] Echec de la persistance locale.');
+      }
 
-  /*
-   * Sérialisation des écritures.
-   *
-   * Cela évite deux writeDB() simultanés
-   * qui pourraient écraser les modifications
-   * l'une de l'autre au niveau du stockage.
-   */
-  writeQueue =
-    writeQueue
-      .then(async () => {
+      if (pool && pgConnected) {
+        await persistPostgres(formattedData);
+      } else if (pool) {
+        schedulePgReconnect();
+      }
+    })
+    .catch((error) => {
+      console.error('[DB WRITE QUEUE ERROR]:', error.message);
+    });
 
-        /*
-         * 1. Persistance locale atomique.
-         *
-         * Le fichier local constitue notre point
-         * de récupération immédiat.
-         */
-        const localSuccess =
-          writeLocalAtomically(
-            formattedData
-          );
-
-        if (!localSuccess) {
-
-          console.error(
-            '[DB CRITICAL] Échec de la persistance locale.'
-          );
-        }
-
-        /*
-         * 2. PostgreSQL.
-         *
-         * On tente la persistance distante
-         * sans bloquer l'API.
-         */
-        if (pool && pgConnected) {
-          await persistPostgres(
-            formattedData
-          );
-        } else if (pool) {
-          schedulePgReconnect();
-        }
-
-      })
-      .catch((error) => {
-
-        console.error(
-          '[DB WRITE QUEUE ERROR]:',
-          error.message
-        );
-
-      });
-
-  /*
-   * On retourne la Promise pour permettre
-   * au code appelant de l'attendre s'il le souhaite.
-   */
   return writeQueue;
 }
 
 // ============================================================
-// DATABASE STATUS
+// HEALTH, MONITORING & SHUTDOWN
 // ============================================================
 
 function getDatabaseStatus() {
-
   return {
-
-    engine:
-      pgConnected
-        ? 'postgresql'
-        : 'local-json',
-
+    engine: pgConnected ? 'postgresql' : 'local-json',
     postgresql: {
       configured: Boolean(DATABASE_URL),
       connected: pgConnected,
       pool: Boolean(pool)
     },
-
     local: {
       enabled: true,
       path: DB_PATH,
       exists: fs.existsSync(DB_PATH),
       sizeBytes: getFileSize(DB_PATH),
-      backupsEnabled:
-        ENABLE_LOCAL_BACKUP
+      backupsEnabled: ENABLE_LOCAL_BACKUP
     },
-
     initializedAt,
-
     lastSuccessfulWrite,
-
-    lastError:
-      lastDatabaseError
-        ? {
-            timestamp:
-              lastDatabaseError.timestamp
-          }
-        : null,
-
+    lastError: lastDatabaseError
+      ? { timestamp: lastDatabaseError.timestamp }
+      : null,
     counts: {
-      users:
-        Array.isArray(memoryCache.users)
-          ? memoryCache.users.length
-          : 0,
-
-      audits:
-        Array.isArray(memoryCache.audits)
-          ? memoryCache.audits.length
-          : 0,
-
-      transactions:
-        Array.isArray(memoryCache.transactions)
-          ? memoryCache.transactions.length
-          : 0
+      users: Array.isArray(memoryCache.users) ? memoryCache.users.length : 0,
+      audits: Array.isArray(memoryCache.audits) ? memoryCache.audits.length : 0,
+      transactions: Array.isArray(memoryCache.transactions)
+        ? memoryCache.transactions.length
+        : 0
     }
   };
 }
 
-// ============================================================
-// DATABASE HEALTH
-// ============================================================
-
 async function checkDatabaseHealth() {
-
   const result = {
     healthy: true,
     postgresql: {
@@ -854,136 +533,69 @@ async function checkDatabaseHealth() {
     }
   };
 
-  /*
-   * Vérification locale.
-   */
   try {
-
     ensureLocalDirectories();
-
     fs.accessSync(
       path.dirname(DB_PATH),
-      fs.constants.R_OK |
-      fs.constants.W_OK
+      fs.constants.R_OK | fs.constants.W_OK
     );
-
     result.local.available = true;
-
   } catch (_) {
-
     result.local.available = false;
     result.healthy = false;
   }
 
-  /*
-   * Vérification PostgreSQL.
-   */
   if (pool && pgConnected) {
-
     try {
-
       await pool.query('SELECT 1');
-
       result.postgresql.connected = true;
-
     } catch (error) {
-
       result.postgresql.connected = false;
       result.healthy = false;
-
       pgConnected = false;
-
       lastDatabaseError = {
         message: error.message,
         timestamp: new Date().toISOString()
       };
-
       schedulePgReconnect();
     }
-
   } else if (DATABASE_URL) {
-
-    /*
-     * PostgreSQL est configuré mais indisponible.
-     *
-     * Le système reste utilisable grâce au fallback
-     * local, mais la santé globale n'est pas parfaite.
-     */
     result.healthy = false;
   }
 
   return result;
 }
 
-// ============================================================
-// FLUSH
-// ============================================================
-
 async function flushDB() {
-
   try {
-
     await writeQueue;
-
-    /*
-     * Dernière synchronisation PostgreSQL.
-     */
     if (pool && pgConnected) {
-      await persistPostgres(
-        normalizeData(memoryCache)
-      );
+      await persistPostgres(normalizeData(memoryCache));
     }
-
   } catch (error) {
-
-    console.error(
-      '[DB FLUSH ERROR]:',
-      error.message
-    );
+    console.error('[DB FLUSH ERROR]:', error.message);
   }
 }
 
-// ============================================================
-// GRACEFUL SHUTDOWN
-// ============================================================
-
 async function closeDB() {
-
-  console.log(
-    '[DB] Fermeture du moteur de persistance...'
-  );
-
+  console.log('[DB] Fermeture du moteur de persistance...');
   try {
-
     if (reconnectTimer) {
-
-      clearTimeout(
-        reconnectTimer
-      );
-
+      clearTimeout(reconnectTimer);
       reconnectTimer = null;
     }
 
     await flushDB();
 
     if (pool) {
-
       await pool.end();
-
       pool = null;
       pgConnected = false;
     }
 
-    console.log(
-      '[DB] Moteur de persistance arrêté proprement.'
-    );
-
+    console.log('[DB] Moteur de persistance arrete proprement.');
   } catch (error) {
-
-    console.error(
-      '[DB CLOSE ERROR]:',
-      error.message
-    );
+    console.error('[DB CLOSE ERROR]:', error.message);
   }
 }
 
@@ -992,17 +604,8 @@ async function closeDB() {
 // ============================================================
 
 module.exports = {
-
-  /*
-   * API compatible avec server.js
-   */
   readDB,
   writeDB,
-
-  /*
-   * Fonctions supplémentaires pour
-   * health / observabilité / shutdown.
-   */
   getDatabaseStatus,
   checkDatabaseHealth,
   flushDB,
